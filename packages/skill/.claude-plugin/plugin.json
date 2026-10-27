@@ -1,0 +1,10 @@
+{
+  "name": "juicyjuicy",
+  "version": "0.1.0",
+  "description": "Publish browser games you make with AI to juicyjuicy.games and get a link to play.",
+  "author": { "name": "JuicyJuicy Games" },
+  "homepage": "https://juicyjuicy.games/docs/publish",
+  "repository": "https://github.com/githubvoyage/juicyjuicy",
+  "license": "MIT",
+  "keywords": ["games", "publish", "web", "juicyjuicy"]
+}

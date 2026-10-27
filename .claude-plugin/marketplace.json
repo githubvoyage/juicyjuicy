@@ -1,0 +1,15 @@
+{
+  "name": "juicyjuicy",
+  "owner": { "name": "JuicyJuicy Games" },
+  "metadata": {
+    "description": "Claude plugins for JuicyJuicy Games, the home for AI-made browser games."
+  },
+  "plugins": [
+    {
+      "name": "juicyjuicy",
+      "source": "./packages/skill",
+      "description": "Publish browser games you make with AI to juicyjuicy.games and get a link to play.",
+      "version": "0.1.0"
+    }
+  ]
+}

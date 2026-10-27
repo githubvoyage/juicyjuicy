@@ -1,0 +1,65 @@
+name: Publish to JuicyJuicy
+description: Build a browser game and publish it to juicyjuicy.games on every push (ARCHITECTURE §13).
+author: JuicyJuicy Games
+branding:
+  icon: play
+  color: orange
+
+inputs:
+  token:
+    description: A JuicyJuicy token from https://juicyjuicy.games/settings/tokens, kept in a repository secret (e.g. JUICY_TOKEN).
+    required: true
+  path:
+    description: Folder with juicy.json, relative to the repository root.
+    default: "."
+  build-command:
+    description: Command that builds the game, run in `path` first, e.g. `npm ci && npm run build`. Empty skips building.
+    default: ""
+  message:
+    description: Note for the version history. Default the short commit SHA and the commit's first line.
+    default: ""
+  cli-version:
+    description: Version of the juicyjuicy CLI to run from npm. The default `0` is the newest 0.x release; an exact version (e.g. 0.4.0) pins it.
+    default: "0"
+  api-url:
+    description: Server to publish to (for testing). Default https://juicyjuicy.games.
+    default: ""
+
+outputs:
+  game-url:
+    description: The game's page, e.g. https://juicyjuicy.games/g/space-goose.
+    value: ${{ steps.publish.outputs.game-url }}
+  play-url:
+    description: The game itself on the play domain.
+    value: ${{ steps.publish.outputs.play-url }}
+  version:
+    description: The version number that went live.
+    value: ${{ steps.publish.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 22
+
+    - name: Build
+      if: inputs.build-command != ''
+      shell: bash
+      working-directory: ${{ inputs.path }}
+      # Through env, so the command is never spliced into the script.
+      env:
+        BUILD_COMMAND: ${{ inputs.build-command }}
+      run: eval "$BUILD_COMMAND"
+
+    - name: Publish
+      id: publish
+      shell: bash
+      working-directory: ${{ inputs.path }}
+      env:
+        JUICY_TOKEN: ${{ inputs.token }}
+        JUICY_API_URL: ${{ inputs.api-url }}
+        JUICY_MESSAGE: ${{ inputs.message }}
+        JUICY_CLI_VERSION: ${{ inputs.cli-version }}
+        COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+      run: bash "$GITHUB_ACTION_PATH/publish.sh"
