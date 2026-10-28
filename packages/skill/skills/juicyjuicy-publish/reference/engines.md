@@ -1,6 +1,6 @@
 # Making a web build, by engine
 
-JuicyJuicy serves the build folder at the root of the game's own origin (`https://<id>.juicyjuicy.space/`) inside a sandboxed iframe. What works: static files, ES modules, WebAssembly (`.wasm` is served as `application/wasm`), `localStorage`/IndexedDB saves (kept across versions; cookies are cleared), fetches to public CDNs and APIs, fullscreen, gamepads, pointer lock. What doesn't: server code, `SharedArrayBuffer` (no cross-origin isolation), popups and navigating the top page.
+JuicyJuicy serves the build folder at the root of the game's own origin (`https://<id>.juicyjuicy.space/`) inside a sandboxed iframe. What works: static files, ES modules, WebAssembly (`.wasm` is served as `application/wasm`), `localStorage`/IndexedDB saves (kept across versions; cookies are cleared; for saves that follow a signed-in player to any browser use [cloud-saves.md](cloud-saves.md)), fetches to public CDNs and APIs, fullscreen, gamepads, pointer lock. What doesn't: server code, `SharedArrayBuffer` (no cross-origin isolation), popups and navigating the top page.
 
 ## Plain HTML, CSS and JavaScript
 No build step. `buildDir` is `.` (the project folder), `entry` is `index.html`. Keep everything the game needs inside the folder and reference files with relative paths. Don't keep secrets in the folder, although hidden files (`.env`) are never uploaded anyway.
