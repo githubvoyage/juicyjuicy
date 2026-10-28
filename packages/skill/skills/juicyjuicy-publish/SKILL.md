@@ -61,14 +61,15 @@ All fields: [reference/manifest.md](reference/manifest.md).
 A `thumbnail.png` (or `.jpg`/`.webp`, up to 2 MB and 4096×4096 pixels, ideally the game's shape, like 1280×720 for 16:9) in the project folder becomes the game's tile.
 
 - **If you can run the game in a browser and take a screenshot**, make a deliberate one: get past any title or "click to start" screen to real gameplay, then save it as `thumbnail.png` and pass `--thumbnail thumbnail.png` to `init`.
-- **Otherwise the CLI takes one itself.** When `juicy.json` names no thumbnail, `check` and `publish` open the built game in Chrome, Edge, Chromium or Brave on this machine (headless, at the game's `aspectRatio`) and use a screenshot taken a few seconds after it loads. Don't block publishing on a thumbnail.
+- **Otherwise the CLI takes one itself.** When `juicy.json` names no thumbnail, `check` and `publish` open the built game in Chrome, Edge, Chromium or Brave on this machine (headless, at the game's `aspectRatio`, sandboxed and offline: only the game's own files load) and use a screenshot taken a few seconds after it loads. A game that loads its engine, fonts or images from another site is captured without them. Don't block publishing on a thumbnail.
+- **Not for a remix**, unless the user agrees: the screenshot runs the other creator's code. Ask first; only if they say yes, pass `--auto-thumbnail` to `check` and `publish`. Without it you get a warning starting `no thumbnail: this is a remix`.
 
 In step 5's `check` result, read what happened and tell the user in a sentence:
 
 - **Captured:** a `{"event": "thumbnail_captured", "path", "browser"}` line and `"thumbnailAuto": true`. Say a screenshot was taken automatically and how to replace it. If you can view images, look at `path` first: if it's a loading screen, a "click to start" screen or looks broken, say so and offer to make a better one.
 - **Fell back:** a warning starting `no thumbnail, and no screenshot of the game either (<reason>)`: no browser was found (`JUICY_BROWSER` can point at one), the game showed only one colour, or it timed out. The tile will show the game's title on a gradient; say so, with the reason.
 
-To replace it, the user saves a screenshot as `thumbnail.png` in the project folder (then `init --thumbnail thumbnail.png`, or set `"thumbnail"` in `juicy.json`), or uploads one on the game's dashboard page. A dashboard thumbnail lasts until the next publish takes a new screenshot, so for updates after that publish with `--no-auto-thumbnail` (or use `thumbnail.png`).
+To replace it, the user saves a screenshot as `thumbnail.png` in the project folder (then `init --thumbnail thumbnail.png`, or set `"thumbnail"` in `juicy.json`), or uploads one on the game's dashboard page. A dashboard thumbnail stays when later updates take screenshots (the result says `"keptDashboardThumbnail": true`); only a `thumbnail` named in `juicy.json` replaces it.
 
 ### 5. Review before publishing
 
@@ -108,7 +109,7 @@ npx -y juicyjuicy@0 publish --json --message "<what changed, in a few words>"
 
 ### 7. Tell the user
 
-Give them the `gameUrl` from the result (e.g. `https://juicyjuicy.games/g/snake-deluxe`). It's the game's page on JuicyJuicy, where their friends can play it. Say what the tile shows: the user's `thumbnail.png`, an automatic screenshot (`"thumbnailAuto": true`), or the title on a gradient (step 4).
+Give them the `gameUrl` from the result (e.g. `https://juicyjuicy.games/g/snake-deluxe`). It's the game's page on JuicyJuicy, where their friends can play it. Say what the tile shows: the user's `thumbnail.png`, an automatic screenshot (`"thumbnailAuto": true`), the one they set on the dashboard (`"keptDashboardThumbnail": true`), or the title on a gradient (step 4).
 
 If the result has `"review": "held"`, the new version **waits for an admin's review** and isn't what players get yet. Say so plainly, with the `heldReason` and the version players get meanwhile (`liveVersion`; when it's the new version itself, as for a first publish, it plays by link but isn't on the home page or in search yet). It goes live by itself once an admin approves it, and their dashboard (the link in the `warning` line) shows it until then. Don't republish to get past it: a new version waits the same way. With `"review": "running"`, the check hadn't finished: tell the user that if it holds the update, players keep the earlier version for a while and the dashboard says why.
 
@@ -130,7 +131,7 @@ npx -y juicyjuicy@0 remix <slug> --json
 - The download is the **built** game. For bundled games (Vite, Phaser…) that's minified code. If the result has a `sourceUrl`, the source is public there: offer to clone it, and clone, install and build it only once the user says yes. Then make the changes there, build, and copy the `juicy.json` from the remix folder into the project (adjusting `buildDir`).
 - If the user hasn't said what to change, ask them. Then work in a loop: make the change, and **after each change ask the user whether to change something else or publish it to JuicyJuicy**. Keep going until they choose to publish.
 - Before publishing, give the remix its own `title`: just its name, like `Goose Custom Skins`. Don't put "Remix" or the original's name in it: the game's page and tile already show a **Remix of "Space Goose"** badge. (`title` starts as the original's.) Write a new `description` too, and put your model and tool in `madeWith`. `remixable` starts `false`: only set it to `true` if the user wants others to remix their remix.
-- Then continue with steps 4–7: a new thumbnail if it looks different, the review, `publish`, and give the user the link. After publishing, ask again: change something else (publishing again makes a new version at the same link) or stop.
+- Then continue with steps 4–7: a new thumbnail if it looks different (the automatic screenshot only with the user's OK and `--auto-thumbnail`, step 4), the review, `publish`, and give the user the link. After publishing, ask again: change something else (publishing again makes a new version at the same link) or stop.
 
 ## When something fails
 
@@ -152,5 +153,7 @@ Everything else is in [reference/troubleshooting.md](reference/troubleshooting.m
 
 ## Other commands
 
-- `npx -y juicyjuicy@0 list --json`: the user's games; `list <slug>` shows one game's versions.
+- `npx -y juicyjuicy@0 list --json`: the user's games; `list <slug>` shows one game's versions. `--all` lists every game on JuicyJuicy instead (60 a page, `--page 2` and on; `nextPage` in the result), `--owner <username>` another creator's. Narrow and order any list with `--search <title text>`, `--tag`, `--engine`, `--remixes`, `--sort newest|upvoted|downvoted|played` and `--period 24h|week|month|all`, e.g. to find a game to remix.
+- `npx -y juicyjuicy@0 publish --draft --json`: uploads a new version without making it live (players keep the current one), when the user wants to publish later. The result has `draft: true`; when they say so, make it live with `rollback <version>`, or they can on the dashboard.
+- `npx -y juicyjuicy@0 rollback <version> --slug <slug> --json`: makes an earlier version or a draft live, e.g. when the user says the last update broke the game. Run `list <slug>` first to pick the version with the user; one waiting for an admin's review can't be made live (`FORBIDDEN`).
 - `npx -y juicyjuicy@0 open <slug>`: opens the game page in the browser.

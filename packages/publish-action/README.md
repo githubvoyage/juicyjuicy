@@ -29,11 +29,13 @@ Each push becomes a new version (`source: github` in the version history), with 
 SHA and the commit's first line as its note. Outputs: `game-url`, `play-url`, `version`.
 
 No `thumbnail` in `juicy.json`? The CLI screenshots the built game with the runner's Chrome
-(`ubuntu-latest`, `windows-latest` and `macos-latest` ship one) and uses that. On a runner without
+(`ubuntu-latest`, `windows-latest` and `macos-latest` ship one), offline (only the game's own
+files load), and uses that. A remix (`remixedFrom` in `juicy.json`) isn't screenshotted, since
+that would run the other creator's code in your workflow. On a runner without
 Chrome, Edge, Chromium or Brave it publishes anyway, with the title-on-a-gradient tile and a
 warning on the job; set `JUICY_BROWSER` in the step's `env` to a browser's path if yours is
-somewhere else. To keep a thumbnail you uploaded on the dashboard, commit it as `thumbnail.png`
-and set `"thumbnail"` in `juicy.json`: otherwise each push replaces it with a new screenshot.
+somewhere else. A thumbnail you upload on the game's dashboard stays: later pushes don't replace
+it with a screenshot (with CLI 0.4.0 or newer), only a `"thumbnail"` named in `juicy.json` does.
 
 The Action runs `juicyjuicy@0` from npm (the newest 0.x release). Set `cli-version` to an exact
 version such as `0.4.0` to choose when your builds move to a new one; `npm audit signatures` checks
