@@ -13,7 +13,8 @@ Paste it as is, before the game's own code: an inline `<script>` in `index.html`
 
 ```js
 // JuicyJuicy cloud saves: https://juicyjuicy.games/docs/publish#saves
-window.juicy = window.juicy || (function () {
+window.juicy = window.juicy || {};
+window.juicy.save || (function (juicy) {
   var KEY = "juicyjuicy:save";
   var framed = window.parent !== window;
   var onSite = false;
@@ -69,47 +70,44 @@ window.juicy = window.juicy || (function () {
       localStorage.removeItem(KEY);
     } catch (e) {}
   }
-  var juicy = {
-    // Resolves to the saved data, or null when there's none.
-    load: function () {
-      return ask({ type: "juicyjuicy:load" }).then(function (m) {
-        if (!m) {
-          if (onSite) throw failed(null);
-          return readLocal();
-        }
-        if (!m.ok) throw failed(m);
-        if (!m.signedIn) return readLocal();
-        var mine = readLocal();
-        if (m.data !== null || mine === null) {
-          dropLocal();
-          return m.data;
-        }
-        // Played signed out, then joined: the progress moves to the cloud.
-        return juicy.save(mine).then(
-          function () { return mine; },
-          function () { return mine; }
-        );
-      });
-    },
-    // Saves any JSON value (null deletes the save). Resolves to { cloud: true, savedAt } or
-    // { cloud: false } (kept in this browser); rejects with an error that has a code.
-    save: function (data) {
-      return ask({ type: "juicyjuicy:save", data: data }).then(function (m) {
-        if (!m) {
-          if (onSite) throw failed(null);
-          return writeLocal(data);
-        }
-        if (m.ok) {
-          dropLocal();
-          return { cloud: true, savedAt: m.savedAt };
-        }
-        if (m.error.code === "SIGNED_OUT") return writeLocal(data);
-        throw failed(m);
-      });
-    }
+  // Resolves to the saved data, or null when there's none.
+  juicy.load = function () {
+    return ask({ type: "juicyjuicy:load" }).then(function (m) {
+      if (!m) {
+        if (onSite) throw failed(null);
+        return readLocal();
+      }
+      if (!m.ok) throw failed(m);
+      if (!m.signedIn) return readLocal();
+      var mine = readLocal();
+      if (m.data !== null || mine === null) {
+        dropLocal();
+        return m.data;
+      }
+      // Played signed out, then joined: the progress moves to the cloud.
+      return juicy.save(mine).then(
+        function () { return mine; },
+        function () { return mine; }
+      );
+    });
   };
-  return juicy;
-})();
+  // Saves any JSON value (null deletes the save). Resolves to { cloud: true, savedAt } or
+  // { cloud: false } (kept in this browser); rejects with an error that has a code.
+  juicy.save = function (data) {
+    return ask({ type: "juicyjuicy:save", data: data }).then(function (m) {
+      if (!m) {
+        if (onSite) throw failed(null);
+        return writeLocal(data);
+      }
+      if (m.ok) {
+        dropLocal();
+        return { cloud: true, savedAt: m.savedAt };
+      }
+      if (m.error.code === "SIGNED_OUT") return writeLocal(data);
+      throw failed(m);
+    });
+  };
+})(window.juicy);
 ```
 
 ## Using it
