@@ -18,7 +18,6 @@ The manifest in the project folder. `juicyjuicy init` writes it; edit it by hand
   "orientation": "landscape",
   "aspectRatio": "16:9",
   "thumbnail": "thumbnail.png",
-  "howItWasMade": "HOW_I_MADE_IT.md",
   "remixable": true,
   "sourceUrl": "https://github.com/someone/space-goose"
 }
@@ -39,7 +38,7 @@ The manifest in the project folder. `juicyjuicy init` writes it; edit it by hand
 | `orientation` | | `landscape`, `portrait` or `any` (default). | `--orientation` |
 | `aspectRatio` | | `"W:H"` like `"16:9"` or `"4:3"`, or `"fill"` to fill the player. Default `16:9`. | `--aspect-ratio` |
 | `thumbnail` | | png/jpg/webp in the project folder (not the build folder), up to 2 MB and 4096×4096 pixels. Without one, `check` and `publish` screenshot the game in a local Chrome or Edge, offline (`--no-auto-thumbnail` turns that off; a remix only with `--auto-thumbnail`). | `--thumbnail` |
-| `howItWasMade` | | A `.md` file in the project folder, up to 20 KB, shown on the game page. | (detected: `HOW_I_MADE_IT.md`) |
+| `howItWasMade` | | No longer used; `check` warns about it and `init` removes it. | |
 | `remixable` | | `true` grants the JuicyJuicy remix license: other members may remix the game on JuicyJuicy only (see SKILL.md, "Remix a game"). Default `false`. | `--remixable` |
 | `sourceUrl` | | Plain `https://` link to the source, e.g. a GitHub repo (no `?`, `#`, spaces or quotes; at most 300 characters). | `--source-url` |
 | `remixedFrom` | | Set by `juicyjuicy remix`; don't edit. | |

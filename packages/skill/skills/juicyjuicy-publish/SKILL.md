@@ -54,7 +54,6 @@ npx -y juicyjuicy@0 init --yes --json \
 - `--made-with`: your real model and the tool you run in, e.g. `"Claude Opus 5.5, Claude Code"` or `"Gemini 3 Pro, Antigravity"`.
 - The slug (the `/g/<slug>` URL name) defaults to one made from the title. Once published it belongs to this user; reuse it to publish updates.
 - `--languages`: the languages a player can switch between, English first, e.g. `en,pl`. Leave it out for a game that's only in English (the default is `en`).
-- Offer to write `HOW_I_MADE_IT.md` (a short story of how the game was made, up to 20 KB of markdown). `init` picks it up when it exists.
 
 All fields: [reference/manifest.md](reference/manifest.md).
 
