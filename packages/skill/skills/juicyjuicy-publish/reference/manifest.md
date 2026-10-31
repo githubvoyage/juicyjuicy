@@ -13,6 +13,7 @@ The manifest in the project folder. `juicyjuicy init` writes it; edit it by hand
   "engine": "phaser",
   "madeWith": ["Claude Opus 5.5", "Claude Code"],
   "tags": ["arcade", "space"],
+  "languages": ["en", "pl"],
   "input": ["keyboard", "touch"],
   "orientation": "landscape",
   "aspectRatio": "16:9",
@@ -33,6 +34,7 @@ The manifest in the project folder. `juicyjuicy init` writes it; edit it by hand
 | `engine` | | `vanilla`, `phaser`, `threejs`, `pixi`, `godot`, `unity` or `other`. | `--engine` |
 | `madeWith` | | Up to 5 models/tools, e.g. `["Claude Opus 5.5", "Claude Code"]`. | `--made-with "a, b"` |
 | `tags` | | Up to 5 lowercase words or `word-word`, e.g. `puzzle`, `tower-defense`. | `--tags a,b` |
+| `languages` | | Up to 5 language codes a player can switch between, English first, e.g. `["en", "pl"]`. Default `["en"]`. Shown as a language filter on JuicyJuicy. | `--languages a,b` |
 | `input` | | Any of `keyboard`, `mouse`, `touch`, `gamepad`. | `--input a,b` |
 | `orientation` | | `landscape`, `portrait` or `any` (default). | `--orientation` |
 | `aspectRatio` | | `"W:H"` like `"16:9"` or `"4:3"`, or `"fill"` to fill the player. Default `16:9`. | `--aspect-ratio` |

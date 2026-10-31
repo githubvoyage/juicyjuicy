@@ -53,15 +53,22 @@ npx -y juicyjuicy@0 init --yes --json \
 - `init` keeps what an existing `juicy.json` already says (flags override), and detects `buildDir`, `entry` and `engine`. Check what it wrote.
 - `--made-with`: your real model and the tool you run in, e.g. `"Claude Opus 5.5, Claude Code"` or `"Gemini 3 Pro, Antigravity"`.
 - The slug (the `/g/<slug>` URL name) defaults to one made from the title. Once published it belongs to this user; reuse it to publish updates.
+- `--languages`: the languages a player can switch between, English first, e.g. `en,pl`. Leave it out for a game that's only in English (the default is `en`).
 - Offer to write `HOW_I_MADE_IT.md` (a short story of how the game was made, up to 20 KB of markdown). `init` picks it up when it exists.
 
 All fields: [reference/manifest.md](reference/manifest.md).
+
+**English first.** Every game on JuicyJuicy plays in English by default, so players anywhere can pick it up:
+
+- If the game's text (menus, buttons, instructions, dialogue, text drawn in images) is in another language, build an English version before publishing: keep the player-facing text in one table per language, start in English, and add a visible switch (like `EN | PL`) to the language the game was made in. Tell the user in a sentence that you did. Pass both with `--languages en,pl`.
+- `title` and `description` are always in English. A title that is a name (`Kasztanek`) stays as it is; one made of words in another language gets translated (`Wielka Ucieczka` → `The Great Escape`). Tell the user the English title you chose.
+- Text in the thumbnail (step 4) is in English too.
 
 ### 4. Add a thumbnail
 
 A `thumbnail.png` (or `.jpg`/`.webp`, up to 2 MB and 4096×4096 pixels, ideally the game's shape, like 1280×720 for 16:9) in the project folder becomes the game's tile.
 
-- **If you can run the game in a browser and take a screenshot**, make a deliberate one: get past any title or "click to start" screen to real gameplay, then save it as `thumbnail.png` and pass `--thumbnail thumbnail.png` to `init`.
+- **If you can run the game in a browser and take a screenshot**, make a deliberate one, with the game in English: get past any title or "click to start" screen to real gameplay, then save it as `thumbnail.png` and pass `--thumbnail thumbnail.png` to `init`.
 - **Otherwise the CLI takes one itself.** When `juicy.json` names no thumbnail, `check` and `publish` open the built game in Chrome, Edge, Chromium or Brave on this machine (headless, at the game's `aspectRatio`, sandboxed and offline: only the game's own files load) and use a screenshot taken a few seconds after it loads. A game that loads its engine, fonts or images from another site is captured without them. Don't block publishing on a thumbnail.
 - **Not for a remix**, unless the user agrees: the screenshot runs the other creator's code. Ask first; only if they say yes, pass `--auto-thumbnail` to `check` and `publish`. Without it you get a warning starting `no thumbnail: this is a remix`.
 
