@@ -1,6 +1,6 @@
 ---
 name: juicyjuicy-publish
-description: Publish or update a browser game on JuicyJuicy (juicyjuicy.games) and give the user a link to play it. Use when the user asks to publish, upload, share, deploy, update or release a game "on JuicyJuicy" or "to juicyjuicy.games", or to get a playable link for a web game they made with you. Also use to remix a game from JuicyJuicy (download a remixable game, change it, publish the remix).
+description: Publish or update a browser game on JuicyJuicy (juicyjuicy.games) and give the user a link to play it. Use when the user asks to publish, upload, share, deploy, update or release a game "on JuicyJuicy" or "to juicyjuicy.games", or to get a playable link for a web game they made with you. Also use to remix a game from JuicyJuicy (download a remixable game, change it, publish the remix), and to add a JuicyJuicy upgrade to a game (cloud saves, more languages, a browser-friendly menu).
 ---
 
 # Publish a game to JuicyJuicy
@@ -124,6 +124,28 @@ Give them the `gameUrl` from the result (e.g. `https://juicyjuicy.games/g/snake-
 
 If the result has `"review": "held"`, the new version **waits for an admin's review** and isn't what players get yet. Say so plainly, with the `heldReason` and the version players get meanwhile (`liveVersion`; when it's the new version itself, as for a first publish, it plays by link but isn't on the home page or in search yet). It goes live by itself once an admin approves it, and their dashboard (the link in the `warning` line) shows it until then. Don't republish to get past it: a new version waits the same way. With `"review": "running"`, the check hadn't finished: tell the user that if it holds the update, players keep the earlier version for a while and the dashboard says why.
 
+## Add a JuicyJuicy upgrade
+
+The game's page under My games on JuicyJuicy has an **Upgrades** panel; its Add button copies a prompt like *"In the project for my JuicyJuicy game "space-goose" (…), use the juicyjuicy-publish skill to add JuicyJuicy cloud saves (its recipe reference/cloud-saves.md), then publish an update."* The user may also ask in their own words. Each upgrade has a recipe; follow it, so the result is the same whichever agent does it:
+
+| Upgrade | Recipe | Declared in `juicy.json` as |
+|---|---|---|
+| Browser-friendly menu | [reference/browser-menu.md](reference/browser-menu.md) | `"features": ["browser-menu"]` |
+| Cloud saves | [reference/cloud-saves.md](reference/cloud-saves.md) | `"features": ["cloud-saves"]` |
+| Multi-language | [reference/languages.md](reference/languages.md) | `"languages": ["en", …]` |
+
+Other features on the panel (global highscores, multiplayer, touch controls, gamepad, mouse lock, auto-pause) are "Coming soon" and have no recipe yet: if asked for one, say so, and build it your own way only if the user wants.
+
+1. **Find the project.** Log in first (step 1). The project is the folder whose `juicy.json` has the game's `slug`: the current folder, or one the user points you to. **If it isn't on this computer** (or you're in a chat app or sandbox), download the live version: `npx -y juicyjuicy@0 pull <slug> --json` writes it into a new folder named after the slug (`dir` in the result) with its `juicy.json`, and you work there. Read the result's `next`: the download is the built game, so for a bundled one (minified code), ask whether the user has the source somewhere, or use `sourceUrl`, before changing the bundle itself. `pull` only works for the user's own games (`NOT_FOUND` otherwise).
+2. **Read the recipe** for the upgrade and make the change. Keep everything else about the game as it is.
+3. **Build and try it** (step 2), then **declare it** in `juicy.json` as the table says, adding to what's already listed.
+4. **Review and publish** as steps 5–7 say, with `--message "Add <upgrade>"`. In step 5's `check` result, `features.detected` lists what JuicyJuicy found in the files; a `feature-missing` warning means a declared upgrade isn't there yet: fix it before publishing.
+5. Tell the user what changed for players, and that the Upgrades panel shows it as On once the update is live.
+
+## Bring all my games up to date
+
+When the user asks to bring their JuicyJuicy games up to date or fix a **Needs update** badge, when `check` warns `requirement-missing`, or after updating the CLI: follow [reference/update-all-games.md](reference/update-all-games.md). It starts with `npx -y juicyjuicy@0 check-games --json`, which checks every game of the user's at once and settles what a script can; the rest are code changes, one game at a time.
+
 ## Remix a game
 
 A game marked remixable on JuicyJuicy can be downloaded, changed and published as a new game that links back to it. Log in first (step 1), then:
@@ -167,4 +189,6 @@ Everything else is in [reference/troubleshooting.md](reference/troubleshooting.m
 - `npx -y juicyjuicy@0 list --json`: the user's games; `list <slug>` shows one game's versions. `--all` lists every game on JuicyJuicy instead (60 a page, `--page 2` and on; `nextPage` in the result), `--owner <username>` another creator's. Narrow and order any list with `--search <title text>`, `--tag`, `--engine`, `--remixes`, `--sort newest|upvoted|downvoted|played` and `--period 24h|week|month|all`, e.g. to find a game to remix.
 - `npx -y juicyjuicy@0 publish --draft --json`: uploads a new version without making it live (players keep the current one). Only when the user asks for that in words (e.g. "upload it but don't put it live yet"), never on your own judgment. The result has `draft: true`; when they say so, make it live with `rollback <version>`, or they can on the dashboard.
 - `npx -y juicyjuicy@0 rollback <version> --slug <slug> --json`: makes an earlier version or a draft live, e.g. when the user says the last update broke the game. Run `list <slug>` first to pick the version with the user; one waiting for an admin's review can't be made live (`FORBIDDEN`).
+- `npx -y juicyjuicy@0 pull <slug> --json`: downloads the live version of one of the user's own games into a new folder with its `juicy.json`, to change it when the project isn't on this computer (see "Add a JuicyJuicy upgrade").
+- `npx -y juicyjuicy@0 check-games --json`: checks all the user's games against JuicyJuicy's features and required updates, declares the features it finds where a game never declared them, and lists what still needs a change (see "Bring all my games up to date").
 - `npx -y juicyjuicy@0 open <slug>`: opens the game page in the browser.

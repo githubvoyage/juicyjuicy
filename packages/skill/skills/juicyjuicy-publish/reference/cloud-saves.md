@@ -2,6 +2,12 @@
 
 On JuicyJuicy a signed-in player's progress can follow them to any browser. The game asks the page around its frame with a small snippet; JuicyJuicy keeps one save per player and game. Players who aren't signed in keep the save in the game's own `localStorage`, and it moves to their account the first time they play signed in. Outside JuicyJuicy (opened on its own, a local server, the automatic screenshot) the snippet just uses `localStorage`.
 
+## Adding it to a published game
+When the user asks for cloud saves (the JuicyJuicy Upgrades panel's prompt names this file), follow "Add a JuicyJuicy upgrade" in SKILL.md, and in the game:
+1. Find what the game keeps between sessions, or should: progress, unlocked levels, best scores, settings. A game that keeps nothing yet gets a save of what a returning player would miss.
+2. Paste the snippet below and use it as "Using it" says: load once at the start, save at checkpoints. A game that already saves to `localStorage` keeps its players' progress (see the last points).
+3. Add `"cloud-saves"` to `features` in `juicy.json`: `"features": ["cloud-saves"]`. JuicyJuicy also finds the snippet's `juicyjuicy:save` in the files; `check` warns when `features` lists cloud saves and the files don't have it, and its result's `features.detected` includes `cloud-saves` once they do.
+
 ## The snippet
 Paste it as is, before the game's own code: an inline `<script>` in `index.html`, or the top of the main script. Don't change it; it only posts messages to the page around the frame.
 
