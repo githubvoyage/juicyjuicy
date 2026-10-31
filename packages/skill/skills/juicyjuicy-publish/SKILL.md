@@ -19,8 +19,9 @@ npx -y juicyjuicy@0 whoami --json
 
 If it exits with `2`, log in. `login` opens the user's browser and **waits up to 10 minutes** for them to approve:
 
-- Tell the user first: *"A JuicyJuicy page will open in your browser. Check the code and click **Approve**."*
-- Run `npx -y juicyjuicy@0 login --json`. If your shell can run commands in the background, do that and read the first output line (`{"event": "device_code", "userCode", "verificationUrl"}`) so you can show the user the code and link. Otherwise run it in the foreground with a timeout of at least 10 minutes.
+- Run `npx -y juicyjuicy@0 login --json` in the background if your shell can, and read its first output line (`{"event": "device_code", "userCode", "verificationUrl"}`) right away, and show the user the code and link without waiting for them to ask: the page shows the same code, and that's how they know the login is theirs.
+- Then tell the user, with the real code and link: *"A JuicyJuicy page opened in your browser. Check it shows the code **WXTZ-BCDF** and click **Approve**. If no page opened, go to <verificationUrl>."*
+- If your shell can't run commands in the background, say that first (without a code: it doesn't exist yet), then run it in the foreground with a timeout of at least 10 minutes. The code is also printed as `Your code: …`.
 - The user needs a JuicyJuicy account (it's invite-only for now). If the page says they can't sign in, they need an invite link from a friend who's a member.
 
 In CI there's no browser: the `JUICY_TOKEN` environment variable holds a token instead.
@@ -107,6 +108,8 @@ Keep it short when there's nothing to say: "Checked: no problems found" is enoug
 npx -y juicyjuicy@0 publish --json --message "<what changed, in a few words>"
 ```
 
+This makes the new version live: when the user says "publish", that's what they want. Don't add `--draft` (see "Other commands") unless they asked in words for it not to go live yet. Not for a first publish, a big game or one you're unsure of either: the user would have to find the dashboard and make it live themselves.
+
 `publish` runs `check` again, uploads and finalizes. Publishing the same slug again creates a new version: the link stays the same and players keep their saves. Then it waits up to about 45 seconds for JuicyJuicy's automatic safety check of the new version (`{"event": "reviewing"}`); the result's `review` says how that went.
 
 ### 7. Tell the user
@@ -156,6 +159,6 @@ Everything else is in [reference/troubleshooting.md](reference/troubleshooting.m
 ## Other commands
 
 - `npx -y juicyjuicy@0 list --json`: the user's games; `list <slug>` shows one game's versions. `--all` lists every game on JuicyJuicy instead (60 a page, `--page 2` and on; `nextPage` in the result), `--owner <username>` another creator's. Narrow and order any list with `--search <title text>`, `--tag`, `--engine`, `--remixes`, `--sort newest|upvoted|downvoted|played` and `--period 24h|week|month|all`, e.g. to find a game to remix.
-- `npx -y juicyjuicy@0 publish --draft --json`: uploads a new version without making it live (players keep the current one), when the user wants to publish later. The result has `draft: true`; when they say so, make it live with `rollback <version>`, or they can on the dashboard.
+- `npx -y juicyjuicy@0 publish --draft --json`: uploads a new version without making it live (players keep the current one). Only when the user asks for that in words (e.g. "upload it but don't put it live yet"), never on your own judgment. The result has `draft: true`; when they say so, make it live with `rollback <version>`, or they can on the dashboard.
 - `npx -y juicyjuicy@0 rollback <version> --slug <slug> --json`: makes an earlier version or a draft live, e.g. when the user says the last update broke the game. Run `list <slug>` first to pick the version with the user; one waiting for an admin's review can't be made live (`FORBIDDEN`).
 - `npx -y juicyjuicy@0 open <slug>`: opens the game page in the browser.
