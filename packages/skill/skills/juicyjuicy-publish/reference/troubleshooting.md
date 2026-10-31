@@ -6,7 +6,7 @@ With `--json`, a failed command's last line is `{"ok": false, "error": {"code", 
 
 | Code | Meaning | Fix |
 |---|---|---|
-| `UNAUTHORIZED` | No saved login, or the token was revoked. | `npx -y juicyjuicy@0 login --json` (the user approves in the browser). In CI, set `JUICY_TOKEN`. |
+| `UNAUTHORIZED` | No saved login, or the token was revoked. | `npx -y juicyjuicy@0.7.0 login --json` (the user approves in the browser). In CI, set `JUICY_TOKEN`. |
 | `EXPIRED_TOKEN` | The login code expired (10 minutes) or was used. | Run `login` again. |
 | `ACCESS_DENIED` | The user clicked Deny. | Ask them, then run `login` again. |
 
@@ -19,7 +19,7 @@ With `--json`, a failed command's last line is `{"ok": false, "error": {"code", 
 | `INVALID_PATH` | A file name is unsafe (backslash, control character, too long, …). | Rename the file (POSIX names, under 256 characters). |
 | `TOO_LARGE` | A file is over 100 MB, the whole build over 150 MB, or the thumbnail over 2 MB or 4096 pixels wide or high. Or the user's games together take up more than their 2 GB of storage (the message says "your games already take up"). | Compress or remove assets; resize the thumbnail. For storage: the user deletes a game they don't need on the site; only the newest 5 versions of each game are kept, and old ones are cleaned up daily. |
 | `TOO_MANY_FILES` | More than 3,000 files. | Bundle or pack assets (sprite sheets, atlases). |
-| `VALIDATION_FAILED` | Something else is malformed, e.g. a thumbnail that isn't png/jpg/webp or a file that's missing. | Follow the message. |
+| `VALIDATION_FAILED` | Something else is malformed, e.g. a thumbnail that isn't png/jpg/webp or a file that's missing. Or the message says the CLI is out of date: JuicyJuicy needs a newer release than the one run. | Follow the message. For an out-of-date CLI, run the `setup` command it gives (it updates the CLI and the skill), read the skill again and use the release it names. |
 | `SLUG_TAKEN` | Another creator owns this slug. | Choose a new slug: `init --slug <new-slug>`. |
 | `GAME_LIMIT_REACHED` | The user has 25 games already. | They delete one on the site, or update an existing game instead. |
 | `FORBIDDEN` | The game was removed by an admin, or isn't theirs. | Publish under a new slug; ask an admin if unsure. |

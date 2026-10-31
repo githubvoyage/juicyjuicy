@@ -37,7 +37,7 @@ warning on the job; set `JUICY_BROWSER` in the step's `env` to a browser's path 
 somewhere else. A thumbnail you upload on the game's dashboard stays: later pushes don't replace
 it with a screenshot (with CLI 0.4.0 or newer), only a `"thumbnail"` named in `juicy.json` does.
 
-The Action runs `juicyjuicy@0` from npm (the newest 0.x release). Set `cli-version` to an exact
+The Action runs `juicyjuicy@0` from npm (the newest 0.x release on a fresh runner; a self-hosted runner that keeps its npm cache keeps the 0.x it first ran, so set `cli-version` there). Set `cli-version` to an exact
 version such as `0.4.0` to choose when your builds move to a new one; `npm audit signatures` checks
 the package's registry signature.
 
