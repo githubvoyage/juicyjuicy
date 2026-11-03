@@ -4,7 +4,7 @@ On JuicyJuicy a game can have a **leaderboard** shared by every player: each sig
 
 ## Adding it to a published game
 When the user asks for global highscores (the JuicyJuicy Upgrades panel's prompt names this file), follow "Add a JuicyJuicy upgrade" in SKILL.md, and in the game:
-1. **Decide what's ranked**, from the game, and say it in your summary: a score where more is better (`order: "high"`, the default), or a time or count where less is better (`order: "low"`); points (`format: "points"`) or milliseconds (`format: "time"`, shown as `1:23.45`). A game with several modes or levels ranks one thing: the main mode, or a total. If it isn't clear, ask the user in one short question.
+1. **Decide what's ranked**, from the game, and say it in your summary: a score where more is better (`order: "high"`, the default), or a time or count where less is better (`order: "low"`); points (`format: "points"`) or milliseconds (`format: "time"`, shown as `1:23.45`). **Use one board.** A game with several modes, levels or difficulties ranks one thing on it: the main mode, or a total. If separate boards would suit the game (one per level, mode or difficulty), you may suggest it in your summary, and add them only when the user wants them ("Boards per level or mode" below). If what's ranked isn't clear, ask the user in one short question.
 2. Paste the snippet below and use it as "Using it" says: send the score when a run ends, and show the leaderboard on the game-over screen (and in the menu if there's room).
 3. Add `"highscores"` to `features` in `juicy.json`: `"features": ["highscores"]`. JuicyJuicy also finds the snippet's `juicyjuicy:score` in the files; `check` warns when `features` lists highscores and the files don't have it, and its result's `features.detected` includes `highscores` once they do.
 
@@ -52,52 +52,63 @@ window.juicy.scores || (function (juicy) {
     error.code = m ? m.error.code : "TIMEOUT";
     return error;
   }
-  function readLocal() {
+  // Each board's local best; "main" keeps the key it had before boards.
+  function key(board) {
+    return board && board !== "main" ? KEY + ":" + board : KEY;
+  }
+  function readLocal(board) {
     try {
-      var best = JSON.parse(localStorage.getItem(KEY));
+      var best = JSON.parse(localStorage.getItem(key(board)));
       return best && typeof best.score === "number" ? best : null;
     } catch (e) {
       return null;
     }
   }
-  function keepLocal(score, order, format) {
-    var best = readLocal();
+  function keepLocal(board, score, order, format) {
+    var best = readLocal(board);
     var improved = !best || (order === "low" ? score < best.score : score > best.score);
     if (improved) {
       best = { score: score, order: order, format: format };
       try {
-        localStorage.setItem(KEY, JSON.stringify(best));
+        localStorage.setItem(key(board), JSON.stringify(best));
       } catch (e) {}
     }
     return { cloud: false, best: best.score, rank: null, improved: improved };
   }
   juicy.scores = {
     // Sends a finished run's score: a whole number, or milliseconds for a time. Options (pass the
-    // same ones every time): order "high" (more is better, the default) or "low", format "points"
-    // (the default) or "time". Resolves to { cloud: true, best, rank, improved } or
-    // { cloud: false, best, rank: null, improved } (signed out: kept in this browser); rejects with
-    // an error that has a code.
+    // same ones every time for a board): order "high" (more is better, the default) or "low",
+    // format "points" (the default) or "time", board (only for a game with several, such as
+    // "hard": an id of lowercase letters, digits, - and _; "main" by default). Resolves to
+    // { cloud: true, best, rank, improved } or { cloud: false, best, rank: null, improved }
+    // (signed out: kept in this browser); rejects with an error that has a code.
     submit: function (score, options) {
       var order = (options && options.order) || "high";
       var format = (options && options.format) || "points";
+      var board = options && options.board;
       var message = { type: "juicyjuicy:score", score: score, order: order, format: format };
+      if (board) message.board = board;
       return ask(message).then(function (m) {
         if (!m) {
           if (onSite) throw failed(null);
-          return keepLocal(score, order, format);
+          return keepLocal(board, score, order, format);
         }
         if (m.ok) return { cloud: true, best: m.best, rank: m.rank, improved: m.improved };
-        if (m.error.code === "SIGNED_OUT") return keepLocal(score, order, format);
+        if (m.error.code === "SIGNED_OUT") return keepLocal(board, score, order, format);
         throw failed(m);
       });
     },
     // The leaderboard's top "limit" (10 by default, at most 100): { cloud, signedIn, order,
-    // format, entries: [{ rank, name, score, me }], me: { rank, score } or null }.
-    top: function (limit) {
-      return ask({ type: "juicyjuicy:scores", limit: limit || 10 }).then(function (m) {
+    // format, entries: [{ rank, name, score, me }], me: { rank, score } or null }. Options: board
+    // (as for submit).
+    top: function (limit, options) {
+      var board = options && options.board;
+      var message = { type: "juicyjuicy:scores", limit: limit || 10 };
+      if (board) message.board = board;
+      return ask(message).then(function (m) {
         if (!m) {
           if (onSite) throw failed(null);
-          var best = readLocal();
+          var best = readLocal(board);
           return {
             cloud: false,
             signedIn: false,
@@ -144,4 +155,5 @@ const board = await juicy.scores.top(10);
 - `submit()` resolves to `{ cloud: true, best, rank, improved }`, or `{ cloud: false, best, rank: null, improved }` when the player isn't signed in (kept in this browser), and rejects with an `Error` whose `code` is `INVALID`, `RATE_LIMITED`, `PAUSED` (highscores paused for a while), `FAILED` or `TIMEOUT`. `top()` rejects with the same codes. The game keeps running either way; just leave the board out.
 - **A game that already keeps a local high score** keeps showing it as "your best" if it likes; the leaderboard is what `top()` returns. Don't send old local high scores to `submit()`: a board is about runs played on JuicyJuicy.
 - **Scores are what the game sends.** Don't add anti-cheat code; JuicyJuicy's creator and admins remove scores that look wrong.
+- **Boards per level or mode**, only when the user asks for them: pass `board` to both calls, `juicy.scores.submit(score, { ...BOARD, board: "hard" })` and `juicy.scores.top(10, { board: "hard" })`. A board's id is lowercase letters, digits, `-` and `_` (at most 32 characters, starting with a letter or digit), and the game page labels it from the id (`hard-mode` shows as "Hard mode"), so pick ids that read well. Without `board` a score goes to `main`, the game's first board. Each board ranks its own way (its first score sets it), a game has at most 10 boards (a score for an 11th is refused, `INVALID`), and the game page shows one tab per board. Keep the set fixed (levels, modes): never make a board id from something a player types.
 - **Godot, Unity and other engines** call the same functions from JavaScript: Godot's `JavaScriptBridge.eval`, a Unity `.jslib` plugin. Put the snippet in the exported `index.html` (Godot: the HTML shell's head include; Unity: the WebGL template).

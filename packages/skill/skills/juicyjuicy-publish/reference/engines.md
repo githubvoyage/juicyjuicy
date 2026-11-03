@@ -12,6 +12,12 @@ npm run build        # → dist/
 ```
 `buildDir: "dist"`. Vite's `base` must be `"/"` (the default) or `"./"`. A GitHub Pages-style base like `"/my-game/"` breaks asset URLs; `check` warns about it. Assets in `public/` are copied to `dist/`.
 
+## Libraries: ship the official file unchanged
+JuicyJuicy's automatic safety check recognizes the official npm builds of common libraries (three.js and its common add-ons, Phaser, PixiJS, Babylon.js, PlayCanvas, p5.js, Excalibur, KAPLAY, Rapier, cannon-es, Matter.js, Planck.js, Tone.js, howler.js) by their exact bytes and doesn't read them again. A copy that was edited, re-minified or bundled into the game's own code is read like the game's code: the first publish takes longer to check, and an update that changes a lot of it can wait for an admin.
+
+- **Plain HTML/JS:** load the library from a public CDN, or copy its files unchanged from `node_modules/<library>/` or the CDN. Don't paste it into your own file, minify it again or edit it. For three.js that's `build/three.module.min.js` (plus `three.core.min.js` from r171), or `three.module.js` and `three.core.js` in releases without `.min.js` files (r187 and later).
+- **Vite with three.js:** keep three.js out of the bundle and load those files with an import map. Copy them into `public/lib/` (`mkdir -p public/lib`, then `cp` the files above from `node_modules/three/build/`), set `build: { rollupOptions: { external: ["three"] } }` in `vite.config.js`, and put `<script type="importmap">{ "imports": { "three": "./lib/three.module.min.js" } }</script>` (or `three.module.js`) in `index.html` before the game's script. Add-ons (`three/addons/...`) can stay in the bundle. The dev server works as before.
+
 ## Other bundlers (webpack, Parcel, esbuild, Rollup)
 Run the production build and set `buildDir` to its output (`dist/`, `build/` or `out/`). Use a root or relative public path.
 

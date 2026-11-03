@@ -5,7 +5,7 @@ For "bring my JuicyJuicy games up to date", "fix the required updates", a **Need
 1. **Check every game at once.** Log in first (SKILL.md step 1), then run:
 
    ```bash
-   npx -y juicyjuicy@0.9.0 check-games --json
+   npx -y juicyjuicy@0.10.0 check-games --json
    ```
 
    JuicyJuicy checks the live version of each of the user's games on its side. It records which features each one has and, for a game whose `juicy.json` never listed its `features`, declares what it finds in the files (like cloud saves). Nothing is uploaded and no new version is made. The result has one entry per game in `games` (`features` with `on`/`off`/`unknown`, `requirements` with `passed`), `toFix` (the games that still need a code change, each with its `prompts`), `notReached` and `next`.
@@ -13,7 +13,7 @@ For "bring my JuicyJuicy games up to date", "fix the required updates", a **Need
 2. **If `notReached` isn't empty**, run `check-games` again: it had no time for those games.
 
 3. **For each game in `toFix`**, one at a time:
-   - Find its project, or download the live version with `npx -y juicyjuicy@0.9.0 pull <slug> --json` (SKILL.md, "Add a JuicyJuicy upgrade", step 1).
+   - Find its project, or download the live version with `npx -y juicyjuicy@0.10.0 pull <slug> --json` (SKILL.md, "Add a JuicyJuicy upgrade", step 1).
    - Do what each prompt says, with the recipe it names when it names one.
    - Make sure `juicy.json` has `features` (`[]` if the game has none of the upgrades).
    - Check and publish an update as SKILL.md steps 5–7 say, with `--message "Required update: <what>"`.

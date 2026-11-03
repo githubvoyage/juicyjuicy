@@ -21,7 +21,7 @@ Don't build anything yet. **Ask the user how multiplayer should work in this gam
 
 1. **What kind of play:** together against the game (co-op), against each other (versus), taking turns, or a race or party round?
 2. **How many players:** 2 to 10.
-3. **How friends join:** an **Invite** button that shares a link, a code shown on screen to type in, or both. Can someone join a game that has started, or only in the lobby?
+3. **How players join:** an **Invite** button that shares a link, a code shown on screen to type in, and/or **public rooms** anyone playing the game can find in a list and join (see "Public rooms"). Can someone join a game that has started, or only in the lobby?
 4. **When someone leaves:** does the game go on without them? When the host leaves, the next player takes over (see "When the host changes"); is that right for this game?
 5. **Phones:** should it play on phones (touch controls)?
 6. **Anything else:** teams, rounds, a winner screen, what each player sees of the others.
@@ -43,7 +43,8 @@ window.juicy.rooms || (function (juicy) {
   var waiting = {};
   window.addEventListener("message", function (event) {
     var m = event.data;
-    if (event.source !== window.parent || !m || m.type !== "juicyjuicy:room-ticket") return;
+    if (event.source !== window.parent || !m) return;
+    if (m.type !== "juicyjuicy:room-ticket" && m.type !== "juicyjuicy:room-list") return;
     var done = waiting[m.id];
     if (!done) return;
     delete waiting[m.id];
@@ -55,8 +56,8 @@ window.juicy.rooms || (function (juicy) {
     error.code = code;
     return error;
   }
-  // The player's answer (with a ticket when asked), or null when not on JuicyJuicy.
-  function ask(ticket) {
+  // The player's answer to a message, or null when not on JuicyJuicy.
+  function ask(message) {
     return new Promise(function (resolve, reject) {
       if (onSite === false) return resolve(null);
       var id = "juicy-room-" + ++next;
@@ -69,11 +70,16 @@ window.juicy.rooms || (function (juicy) {
       waiting[id] = function (m) {
         clearTimeout(timer);
         if (!m.ok) return reject(fail(m.error.code, m.error.message));
-        inviteUrl = m.inviteUrl;
+        if (m.inviteUrl) inviteUrl = m.inviteUrl;
         resolve(m);
       };
-      window.parent.postMessage({ type: "juicyjuicy:room", id: id, ticket: ticket }, "*");
+      message.id = id;
+      window.parent.postMessage(message, "*");
     });
+  }
+  // The invite code, and a ticket when asked.
+  function askTicket(ticket) {
+    return ask({ type: "juicyjuicy:room", ticket: ticket });
   }
 
   function Room(code) {
@@ -82,6 +88,8 @@ window.juicy.rooms || (function (juicy) {
     this.host = null;
     this.max = 0;
     this.locked = false;
+    this.public = false;
+    this.label = null;
     this.players = [];
     this.handlers = {};
     this.link = null;
@@ -89,7 +97,7 @@ window.juicy.rooms || (function (juicy) {
     this.closed = false;
   }
   // Events: "message" (data, fromId), "join" (player), "leave" (player), "host" (id),
-  // "lock" (locked), "error" (error), "close" (reason).
+  // "lock" (locked), "public" (isPublic), "error" (error), "close" (reason).
   Room.prototype.on = function (event, handler) {
     (this.handlers[event] = this.handlers[event] || []).push(handler);
     return this;
@@ -122,6 +130,10 @@ window.juicy.rooms || (function (juicy) {
   Room.prototype.kick = function (id) {
     if (this.link) this.link.send({ t: "kick", id: id });
   };
+  // The host only: list the room in the game's public rooms (false: invite only).
+  Room.prototype.setPublic = function (on) {
+    if (this.link) this.link.send({ t: "public", public: on !== false });
+  };
   // Shows JuicyJuicy's share sheet for the room's invite link, and returns the link.
   Room.prototype.invite = function () {
     if (onSite) {
@@ -151,6 +163,8 @@ window.juicy.rooms || (function (juicy) {
       room.host = m.host;
       room.max = m.max;
       room.locked = m.locked;
+      room.public = m.public === true;
+      room.label = m.label || null;
       room.players = m.players;
       if (!room.opened) {
         room.opened = true;
@@ -176,6 +190,9 @@ window.juicy.rooms || (function (juicy) {
     } else if (m.t === "lock") {
       room.locked = m.locked;
       room.emit("lock", m.locked);
+    } else if (m.t === "public") {
+      room.public = m.public;
+      room.emit("public", m.public);
     } else if (m.t === "msg") {
       room.emit("message", m.d, m.from);
     } else if (m.t === "error") {
@@ -187,7 +204,7 @@ window.juicy.rooms || (function (juicy) {
 
   // JuicyJuicy's relay: resolves once it has welcomed this player.
   function connect(room, query) {
-    return ask(true).then(function (m) {
+    return askTicket(true).then(function (m) {
       return new Promise(function (resolve, reject) {
         var socket = new WebSocket(m.url + "?ticket=" + encodeURIComponent(m.ticket) + query);
         var welcomed = false;
@@ -253,6 +270,8 @@ window.juicy.rooms || (function (juicy) {
     channel.onmessage = function (event) {
       var e = event.data;
       if (e.to === "relay" && relays[e.code]) relays[e.code].handle(e.from, e.m);
+      else if (e.to === "list") bus().postMessage({ to: e.from, id: e.id, rooms: localRooms(e.from, e.label) });
+      else if (e.to === tab && e.rooms) { if (lists[e.id]) lists[e.id].push.apply(lists[e.id], e.rooms); }
       else if (e.to === tab && mine[e.code]) mine[e.code].receive(e.m);
     };
     window.addEventListener("pagehide", function () {
@@ -260,9 +279,11 @@ window.juicy.rooms || (function (juicy) {
     });
     return channel;
   }
-  function LocalRelay(code, max) {
+  function LocalRelay(code, max, options) {
     this.code = code;
     this.max = max;
+    this.public = options.public;
+    this.label = options.label;
     this.locked = false;
     this.players = [];
     this.host = null;
@@ -280,6 +301,16 @@ window.juicy.rooms || (function (juicy) {
   };
   LocalRelay.prototype.list = function () {
     return this.players.map(function (p) { return { id: p.id, name: p.name }; });
+  };
+  // How the room shows in list() to the tab "from", or null when it isn't listed.
+  LocalRelay.prototype.entry = function (from) {
+    var relay = this;
+    var host = null;
+    relay.players.forEach(function (p) { if (p.id === relay.host) host = p; });
+    if (!relay.public || relay.locked || !host || relay.kicked[from]) return null;
+    if (relay.players.length >= relay.max) return null;
+    return { code: relay.code, host: host.name, players: relay.players.length, max: relay.max,
+      label: relay.label };
   };
   LocalRelay.prototype.remove = function (player) {
     this.players.splice(this.players.indexOf(player), 1);
@@ -301,7 +332,8 @@ window.juicy.rooms || (function (juicy) {
       relay.players.push(player);
       if (!relay.host) relay.host = player.id;
       relay.deliver(from, { t: "welcome", room: relay.code, me: player.id, host: relay.host,
-        max: relay.max, locked: relay.locked, players: relay.list() });
+        max: relay.max, locked: relay.locked, public: relay.public, label: relay.label,
+        players: relay.list() });
       relay.everyone({ t: "join", player: { id: player.id, name: player.name } }, player);
     } else if (!player) {
       return;
@@ -318,6 +350,9 @@ window.juicy.rooms || (function (juicy) {
     } else if (m.t === "lock") {
       relay.locked = m.locked;
       relay.everyone({ t: "lock", locked: m.locked });
+    } else if (m.t === "public") {
+      relay.public = m.public;
+      relay.everyone({ t: "public", public: m.public });
     } else if (m.t === "kick") {
       relay.players.slice().forEach(function (p) {
         if (p.id !== m.id || p === player) return;
@@ -327,10 +362,10 @@ window.juicy.rooms || (function (juicy) {
       });
     }
   };
-  function joinLocal(room, max) {
+  function joinLocal(room, max, options) {
     return new Promise(function (resolve, reject) {
       var code = room.code;
-      if (max) relays[code] = new LocalRelay(code, max);
+      if (max) relays[code] = new LocalRelay(code, max, options);
       mine[code] = room;
       room.link = {
         send: function (m) {
@@ -359,35 +394,89 @@ window.juicy.rooms || (function (juicy) {
       }, 2000);
     });
   }
+  // The public rooms of this origin's tabs, as list() shows them: other tabs answer within 300 ms.
+  var lists = {};
+  function localRooms(from, label) {
+    var found = [];
+    Object.keys(relays).forEach(function (code) {
+      var entry = relays[code].entry(from);
+      if (entry && (!label || entry.label === label)) found.push(entry);
+    });
+    return found;
+  }
+  function listLocal(label) {
+    return new Promise(function (resolve) {
+      var id = "list-" + ++next;
+      var found = lists[id] = localRooms(tab, label);
+      bus().postMessage({ to: "list", from: tab, id: id, label: label });
+      setTimeout(function () {
+        delete lists[id];
+        resolve(found);
+      }, 300);
+    });
+  }
   function newCode() {
     var letters = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
     var code = "";
     for (var i = 0; i < 6; i++) code += letters[Math.floor(Math.random() * letters.length)];
     return code;
   }
+  // A label is the game's own id for a kind of room, never text a player typed.
+  function checkLabel(label) {
+    if (label != null && !/^[a-z0-9-]{1,24}$/.test(label)) {
+      throw fail("INVALID", "A room label is 1 to 24 of a-z, 0-9 and -");
+    }
+    return label || null;
+  }
 
   juicy.rooms = {
     // Opens a new room with this player as its host. options.max: most players, 2 to 10.
+    // options.public: true lists it in list() for anyone to join; options.label: the game's id for
+    // the kind of room (a mode, a map), shown in the list.
     create: function (options) {
-      var max = Math.max(2, Math.min(10, (options && options.max) || 10));
-      return ask(true).then(function (m) {
+      options = options || {};
+      var max = Math.max(2, Math.min(10, options.max || 10));
+      var label;
+      try {
+        label = checkLabel(options.label);
+      } catch (e) {
+        return Promise.reject(e);
+      }
+      var listed = options.public === true;
+      return askTicket(true).then(function (m) {
         var room = new Room(null);
-        if (m) return connect(room, "&create=1&max=" + max);
+        if (m) {
+          return connect(room, "&create=1&max=" + max + (listed ? "&public=1" : "") +
+            (label ? "&label=" + label : ""));
+        }
         room.code = newCode();
-        return joinLocal(room, max);
+        return joinLocal(room, max, { public: listed, label: label });
       });
     },
-    // Joins the room with this code (from invited(), or typed in by the player).
+    // Joins the room with this code (from invited(), list(), or typed in by the player).
     join: function (code) {
       code = String(code || "").trim().toUpperCase();
-      return ask(true).then(function (m) {
+      return askTicket(true).then(function (m) {
         var room = new Room(code);
         return m ? connect(room, "&room=" + encodeURIComponent(code)) : joinLocal(room, 0);
       });
     },
+    // The game's public rooms that can be joined now (not full or locked), newest first:
+    // [{ code, host, players, max, label }]. options.label: only rooms with that label.
+    list: function (options) {
+      var label;
+      try {
+        label = checkLabel(options && options.label);
+      } catch (e) {
+        return Promise.reject(e);
+      }
+      return ask({ type: "juicyjuicy:list-rooms", label: label }).then(function (m) {
+        return m ? m.rooms : listLocal(label);
+      });
+    },
     // The room code of the invite link that opened the game, or null.
     invited: function () {
-      return ask(false).then(function (m) {
+      return askTicket(false).then(function (m) {
         if (m) return m.invite;
         var found = /[?&]room=([A-Za-z0-9]{6})/.exec(location.search);
         return found ? found[1].toUpperCase() : null;
@@ -407,6 +496,10 @@ if (code) start(await juicy.rooms.join(code));
 playButton.onclick = async () => start(await juicy.rooms.create({ max: 4 }));
 joinButton.onclick = async () => start(await juicy.rooms.join(codeInput.value));
 
+// "Find a game" lists the public rooms; "Host a public game" opens one anyone can join.
+findButton.onclick = async () => showRooms(await juicy.rooms.list()); // [{ code, host, players, max, label }]
+hostButton.onclick = async () => start(await juicy.rooms.create({ max: 4, public: true, label: "duel" }));
+
 function start(room) {
   showLobby(room.code, room.players); // [{ id: "p1", name: "luk" }, …], with textContent
   inviteButton.onclick = () => room.invite(); // JuicyJuicy's share sheet, with Copy link
@@ -419,10 +512,12 @@ function start(room) {
 
 - `juicy.rooms.create({ max })` opens a room (2 to 10 players; 10 by default) with this player as host; `join(code)` joins one (any case, spaces ignored). Both resolve to the room once it's open, and reject with an `Error` whose `code` says why: `SIGNED_OUT` (JuicyJuicy has offered to sign in), `ROOM_NOT_FOUND`, `ROOM_FULL`, `ROOM_LOCKED`, `KICKED`, `RATE_LIMITED`, `PAUSED` (multiplayer paused for a while), `OFF`, `GAME_GONE`, `TIMEOUT`, `DISCONNECTED` or `FAILED`. Show the player a short message and go back to the menu.
 - `juicy.rooms.invited()` resolves to the code of the invite link that opened the game, or null.
-- The room: `room.code`, `room.me` (this player's id, like `"p2"`), `room.host` (the host's id), `room.isHost()`, `room.players` (`{ id, name }`, name being the member's JuicyJuicy login), `room.player(id)`, `room.locked` and `room.max`.
+- `juicy.rooms.create({ max, public: true, label })` opens a **public** room: other players of this game see it in `juicy.rooms.list()` and can join it without an invite. `label` is optional: an id the game picks from its own fixed set (`"duel"`, `"team-4"`; 1 to 24 of `a-z`, `0-9` and `-`), for a mode or map. A label that isn't one rejects with `INVALID`.
+- `juicy.rooms.list({ label })` resolves to the public rooms that can be joined now, newest first, at most 50: `[{ code, host, players, max, label }]` (`host` is the host's login). Full and locked rooms aren't in it. With `label`, only rooms with that label. It rejects like `create()` (`SIGNED_OUT`, `RATE_LIMITED`, `PAUSED`, `OFF`, `FAILED`, `TIMEOUT`). Join one with `join(room.code)`.
+- The room: `room.code`, `room.me` (this player's id, like `"p2"`), `room.host` (the host's id), `room.isHost()`, `room.players` (`{ id, name }`, name being the member's JuicyJuicy login), `room.player(id)`, `room.locked`, `room.max`, `room.public` and `room.label`.
 - `room.send(data)` sends any JSON value to everyone else; `room.send(data, id)` only to that player. A player never gets their own messages.
-- `room.on(event, handler)`: `"message"` (data, fromId), `"join"` (player), `"leave"` (player), `"host"` (the new host's id), `"lock"` (locked), `"error"` (an `Error` with a `code`: `RATE_LIMITED`, `TOO_LARGE`, `NOT_HOST`, `NO_PLAYER`, `INVALID`; the room goes on), `"close"` (reason: `LEFT`, `KICKED`, `REPLACED` (the same player joined from another tab), `ROOM_NOT_FOUND`, `TOO_FAST`, `GAME_GONE`, `OFF` or `DISCONNECTED`).
-- The host only: `room.lock()` stops new players joining (players who were in can come back), `room.lock(false)` opens it again; `room.kick(id)` removes a player for good.
+- `room.on(event, handler)`: `"message"` (data, fromId), `"join"` (player), `"leave"` (player), `"host"` (the new host's id), `"lock"` (locked), `"public"` (whether it's listed), `"error"` (an `Error` with a `code`: `RATE_LIMITED`, `TOO_LARGE`, `NOT_HOST`, `NO_PLAYER`, `INVALID`; the room goes on), `"close"` (reason: `LEFT`, `KICKED`, `REPLACED` (the same player joined from another tab), `ROOM_NOT_FOUND`, `TOO_FAST`, `GAME_GONE`, `OFF` or `DISCONNECTED`).
+- The host only: `room.lock()` stops new players joining (players who were in can come back) and takes a public room off the list, `room.lock(false)` opens it again; `room.kick(id)` removes a player for good (they don't see the room in the list either); `room.setPublic(false)` makes a public room invite-only, `room.setPublic()` lists it.
 - `room.invite()` shows JuicyJuicy's share sheet over the game and returns the link (`https://juicyjuicy.games/g/<slug>/play?room=CODE`).
 - `room.leave()` leaves the room.
 
@@ -430,6 +525,10 @@ function start(room) {
 - **The host runs the game.** Players send their input (`{ k: "input", left: true }`, a move, a card played); the host applies it to the one true game state and sends the state, or what changed, to everyone. Players draw what the host sent and never decide outcomes themselves. For a real-time game, send state 10 to 20 times a second and smooth movement between updates; send input when it changes, not every frame.
 - **Small messages with a kind:** `{ k: "state", … }`, `{ k: "input", … }`. Each message is at most 16 KB as JSON, and each player may send at most 60 messages and 64 KB a second (one `send` to everyone counts once). Over that, messages are dropped (`RATE_LIMITED`), and far over it the player is disconnected (`TOO_FAST`).
 - **The lobby:** show the code and the players, an **Invite** button (`room.invite()`) and, for the host, **Start**. When the game starts, the host sends `{ k: "start", … }` and calls `room.lock()` if nobody may join mid-game.
+- **Public rooms** suit games where strangers can have a good time together: versus or party games with short rounds, drop-in co-op. Keep invite-only (the default) for games meant for friends, long sessions, or games that need everyone from the start. A game can offer both: **Play with friends** opens a private room, **Find a game** shows `list()` and **Host a public game** opens a public one.
+  - Show the list as the game's own screen: each room's host login (with `textContent`), its players (`2/4`) and its label in the game's own words, with **Join**, and a **Refresh** button. Refresh when the player asks or at most every 5 seconds while the list is showing (each read counts against the player's limit). An empty list says so and offers to host one.
+  - Lock the room (`room.lock()`) when the round starts unless players may drop in: that takes it off the list. Unlock it after the round to let the next players in.
+  - A label is only the game's own id, from a fixed set in the code. **Never** put text a player typed into a label: no room names (there's no moderation; the security review treats it like free-text chat).
 - **When the host changes** (the host left or dropped): every player keeps the last state the host sent, so on `"host"` the new host (`room.isHost()`) carries on from it and starts sending state. A turn-based game resends whose turn it is.
 - **When a player leaves**, the host decides: remove their character, let the round finish, or end the game if too few are left.
 - **Dropped connections:** phones drop them when the game goes to the background. The snippet reconnects by itself (three tries) and keeps the player's id; during that time `send` does nothing. When the host comes back, it asks for nothing: players resend what they need on `"join"` or `"host"`.
@@ -438,7 +537,7 @@ function start(room) {
 - **No other server, no keys:** everything goes through the room.
 
 ## Try it
-Outside JuicyJuicy, on a local server, the snippet runs rooms **between tabs of the same address**: open the game in two tabs, open a room in one and join it from the other with its code (or open the link `room.invite()` returns). Players are called "Player 1", "Player 2"…, and the room ends when the tab that opened it closes (on JuicyJuicy the host moves to the next player instead). Try every screen with two or three tabs, including leaving and rejoining, before publishing.
+Outside JuicyJuicy, on a local server, the snippet runs rooms **between tabs of the same address**: open the game in two tabs, open a room in one and join it from the other with its code (or open the link `room.invite()` returns). Players are called "Player 1", "Player 2"…, and the room ends when the tab that opened it closes (on JuicyJuicy the host moves to the next player instead). Try every screen with two or three tabs, including leaving and rejoining, before publishing. `list()` shows the public rooms of the other tabs.
 
 On JuicyJuicy, two people (or two browsers signed in as two members) can play it from an invite link once the update is live.
 
