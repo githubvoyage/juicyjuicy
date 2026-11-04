@@ -16,4 +16,4 @@ JuicyJuicy offers English, French, Italian, German, Spanish and Polish (`en`, `f
 Run the game, switch to each language and go through the menus and the first minute of play: no missing keys (an untranslated key shows up as the key's name), no clipped text, and the choice is still there after a reload.
 
 ## Declare it
-Set `languages` in `juicy.json` to every language the game now has, English first, e.g. `"languages": ["en", "fr", "pl"]` (or `npx -y juicyjuicy@0.11.0 init --yes --json --languages en,fr,pl`). Don't add it to `features`: JuicyJuicy reads `languages`, and shows the game in each language's filter.
+Set `languages` in `juicy.json` to every language the game now has, English first, e.g. `"languages": ["en", "fr", "pl"]` (or `npx -y juicyjuicy@0.11.1 init --yes --json --languages en,fr,pl`). Don't add it to `features`: JuicyJuicy reads `languages`, and shows the game in each language's filter.
