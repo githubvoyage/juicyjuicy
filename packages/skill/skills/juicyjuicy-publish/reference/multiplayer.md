@@ -21,12 +21,12 @@ Don't build anything yet. **Ask the user how multiplayer should work in this gam
 
 1. **What kind of play:** together against the game (co-op), against each other (versus), taking turns, or a race or party round?
 2. **How many players:** 2 to 10.
-3. **How players join:** an **Invite** button that shares a link, a code shown on screen to type in, and/or **public rooms** anyone playing the game can find in a list and join (see "Public rooms"). Can someone join a game that has started, or only in the lobby?
+3. **How players join:** through the default menu (see "The menu"): **Multiplayer** → **Search lobby** (a list of public lobbies, plus a code box) or **Host lobby** (a lobby the host switches between Public and Private, with an Invite link). Say you'll build that unless they want something else. Can someone join a game that has started, or only in the lobby?
 4. **When someone leaves:** does the game go on without them? When the host leaves, the next player takes over (see "When the host changes"); is that right for this game?
 5. **Phones:** should it play on phones (touch controls)?
 6. **Anything else:** teams, rounds, a winner screen, what each player sees of the others.
 
-Then write the design back in a few lines: the screens (menu, lobby, game, results), what the host runs, what each player sends and what the host sends back. **Build it only once the user agrees**, then follow "Using it" and "How to build it".
+Then write the design back in a few lines: the screens (the default menu's, then game and results), what the host runs, what each player sends and what the host sends back. **Build it only once the user agrees**, then follow "The menu", "Using it" and "How to build it".
 
 ## The snippet
 Paste it as is, before the game's own code: an inline `<script>` in `index.html`, or the top of the main script. Don't change it. It works next to the cloud-saves snippet, in either order (an older copy of the cloud-saves snippet, without `window.juicy.save ||` near its top, must come first).
@@ -486,27 +486,69 @@ window.juicy.rooms || (function (juicy) {
 })(window.juicy);
 ```
 
+## The menu
+Every game gets this multiplayer menu unless the user asks for another. Build it as the game's own screens, in its own look (fonts, colors, button style), and make every screen work at phone width and by keyboard.
+
+1. **Main menu:** a **Multiplayer** button next to the game's own buttons (Play, Settings…).
+2. **Multiplayer:** two buttons, **Search lobby** and **Host lobby**, and **Back**.
+3. **Search lobby:**
+   - A small framed box listing the public lobbies from `juicy.rooms.list()`: on each row the host's login (with `textContent`), the players (`2/4`), the label in the game's own words if the game uses labels, and a **Join** button. The box keeps its size and scrolls inside when the list is long.
+   - A **refresh icon button** (↻, with `aria-label="Refresh"`) at the box's top right. The list loads once when the screen opens and again only when the player presses it (each read counts against the player's limit; never more often than every 5 seconds).
+   - Under the box, a line "Private lobby? Enter its code", a **code box** (6 letters, upper case, `maxlength="6"`) and a **Join** button; Enter in the box joins too.
+   - An empty list says so in the box ("No open lobbies. Host one!") and keeps the code box working.
+   - **Back**.
+4. **Host lobby** opens a room with `create({ max, public: true })` and goes straight to the lobby screen. **Join** from Search or the code box goes there too.
+5. **The lobby:**
+   - The **lobby code** big and spaced out (`K7QX2M`), so it can be read out.
+   - For the host only, a **Public / Private** switch: Public is listed in Search lobby; Private is only for people with the code or invite link (`room.setPublic(false)`, `room.setPublic()`), with that line under it. It starts on Public; a game meant only for friends (or a user who asks) starts on Private instead. Everyone else sees which it is as text, without the switch.
+   - The players, the host marked (a crown or "(host)"), with empty "Waiting…" slots up to `room.max` (`2/4`).
+   - **Invite** (`room.invite()`: JuicyJuicy's share sheet), **Start** for the host only (the others see "Waiting for the host"), and **Leave**.
+6. **Opened from an invite link** (`juicy.rooms.invited()`): skip the menu and join that room's lobby.
+
+Errors (a wrong code, a full room, signed out) show as a short line on the screen the player is on, which stays open. A closed room goes back to the Multiplayer screen with the reason.
+
 ## Using it
 ```js
-// Opened from an invite link: join that room straight away.
+// Opened from an invite link: join that lobby straight away.
 const code = await juicy.rooms.invited();
-if (code) start(await juicy.rooms.join(code));
+if (code) enter(() => juicy.rooms.join(code));
 
-// The menu's "Play with friends" opens a room; "Join" takes a code the player types.
-playButton.onclick = async () => start(await juicy.rooms.create({ max: 4 }));
-joinButton.onclick = async () => start(await juicy.rooms.join(codeInput.value));
+multiplayerButton.onclick = () => showScreen("multiplayer"); // Search lobby, Host lobby, Back
+hostButton.onclick = () => enter(() => juicy.rooms.create({ max: 4, public: true }));
+searchButton.onclick = () => { showScreen("search"); refresh(); };
+refreshButton.onclick = refresh; // the ↻ icon at the list's top right
+joinCodeButton.onclick = () => enter(() => juicy.rooms.join(codeInput.value));
 
-// "Find a game" lists the public rooms; "Host a public game" opens one anyone can join.
-findButton.onclick = async () => showRooms(await juicy.rooms.list()); // [{ code, host, players, max, label }]
-hostButton.onclick = async () => start(await juicy.rooms.create({ max: 4, public: true, label: "duel" }));
+async function refresh() {
+  const rooms = await juicy.rooms.list(); // [{ code, host, players, max, label }]
+  // One row per room: host login and players (textContent), and a Join button that runs
+  // enter(() => juicy.rooms.join(room.code)). None: "No open lobbies. Host one!"
+  showRooms(rooms);
+}
+
+async function enter(open) {
+  try {
+    start(await open());
+  } catch (error) {
+    showError(error.code); // a short line on this screen: wrong code, full, signed out…
+  }
+}
 
 function start(room) {
-  showLobby(room.code, room.players); // [{ id: "p1", name: "luk" }, …], with textContent
+  showScreen("lobby");
+  showLobby(room); // room.code, room.players ([{ id: "p1", name: "luk" }, …], with textContent), room.max
+  publicSwitch.hidden = !room.isHost();
+  publicSwitch.onchange = () => room.setPublic(publicSwitch.checked); // Public / Private
   inviteButton.onclick = () => room.invite(); // JuicyJuicy's share sheet, with Copy link
-  room.on("join", (player) => addToLobby(player));
-  room.on("leave", (player) => removeFromLobby(player));
-  room.on("message", (data, from) => handle(data, from));
-  room.on("close", (reason) => backToMenu(reason));
+  startButton.hidden = !room.isHost();
+  startButton.onclick = () => { room.send({ k: "start" }); room.lock(); beginGame(room); };
+  leaveButton.onclick = () => room.leave();
+  room.on("join", () => showLobby(room));
+  room.on("leave", () => showLobby(room));
+  room.on("host", () => showLobby(room)); // the new host gets the switch and Start
+  room.on("public", (isPublic) => showPublic(isPublic));
+  room.on("message", (data, from) => (data.k === "start" ? beginGame(room) : handle(data, from)));
+  room.on("close", (reason) => { showScreen("multiplayer"); showError(reason); });
 }
 ```
 
@@ -524,11 +566,10 @@ function start(room) {
 ## How to build it
 - **The host runs the game.** Players send their input (`{ k: "input", left: true }`, a move, a card played); the host applies it to the one true game state and sends the state, or what changed, to everyone. Players draw what the host sent and never decide outcomes themselves. For a real-time game, send state 10 to 20 times a second and smooth movement between updates; send input when it changes, not every frame.
 - **Small messages with a kind:** `{ k: "state", … }`, `{ k: "input", … }`. Each message is at most 16 KB as JSON, and each player may send at most 60 messages and 64 KB a second (one `send` to everyone counts once). Over that, messages are dropped (`RATE_LIMITED`), and far over it the player is disconnected (`TOO_FAST`).
-- **The lobby:** show the code and the players, an **Invite** button (`room.invite()`) and, for the host, **Start**. When the game starts, the host sends `{ k: "start", … }` and calls `room.lock()` if nobody may join mid-game.
-- **Public rooms** suit games where strangers can have a good time together: versus or party games with short rounds, drop-in co-op. Keep invite-only (the default) for games meant for friends, long sessions, or games that need everyone from the start. A game can offer both: **Play with friends** opens a private room, **Find a game** shows `list()` and **Host a public game** opens a public one.
-  - Show the list as the game's own screen: each room's host login (with `textContent`), its players (`2/4`) and its label in the game's own words, with **Join**, and a **Refresh** button. Refresh when the player asks or at most every 5 seconds while the list is showing (each read counts against the player's limit). An empty list says so and offers to host one.
+- **The lobby** is the screen in "The menu". When the game starts, the host sends `{ k: "start", … }` and calls `room.lock()` if nobody may join mid-game. If players may drop in, the host sends `{ k: "start" }` to each player who joins (`room.send(data, player.id)`) so they go straight into the game.
+- **Public and private lobbies:** Host lobby opens a public room, which Search lobby lists; the host's switch makes it private (`room.setPublic(false)`: only the code and the invite link get in) and public again (`room.setPublic()`). The `"public"` event tells everyone, so the lobby can show which it is.
   - Lock the room (`room.lock()`) when the round starts unless players may drop in: that takes it off the list. Unlock it after the round to let the next players in.
-  - A label is only the game's own id, from a fixed set in the code. **Never** put text a player typed into a label: no room names (there's no moderation; the security review treats it like free-text chat).
+  - **Labels** are optional, for a game with modes or maps in Search lobby (`create({ public: true, label: "duel" })`, `list({ label })`). A label is only the game's own id, from a fixed set in the code. **Never** put text a player typed into a label: no lobby names (there's no moderation; the security review treats it like free-text chat).
 - **When the host changes** (the host left or dropped): every player keeps the last state the host sent, so on `"host"` the new host (`room.isHost()`) carries on from it and starts sending state. A turn-based game resends whose turn it is.
 - **When a player leaves**, the host decides: remove their character, let the round finish, or end the game if too few are left.
 - **Dropped connections:** phones drop them when the game goes to the background. The snippet reconnects by itself (three tries) and keeps the player's id; during that time `send` does nothing. When the host comes back, it asks for nothing: players resend what they need on `"join"` or `"host"`.
