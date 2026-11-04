@@ -501,11 +501,12 @@ Every game gets this multiplayer menu unless the user asks for another. Build it
 5. **The lobby:**
    - The **lobby code** big and spaced out (`K7QX2M`), so it can be read out.
    - For the host only, a **Public / Private** switch: Public is listed in Search lobby; Private is only for people with the code or invite link (`room.setPublic(false)`, `room.setPublic()`), with that line under it. It starts on Public; a game meant only for friends (or a user who asks) starts on Private instead. Everyone else sees which it is as text, without the switch.
-   - The players, the host marked (a crown or "(host)"), with empty "Waiting…" slots up to `room.max` (`2/4`).
+   - The players, the host marked (a crown or "(host)"), and one "Waiting for players… 2/4" row while there's room (`room.max`).
+   - For the host only, a **kick button** (×, with `aria-label="Kick <name>"`) on every other player's row: `room.kick(id)` removes them for good (they can't rejoin this lobby and don't see it in Search). If the game shows the players during play (a top bar, a pause menu), the host gets the same button there.
    - **Invite** (`room.invite()`: JuicyJuicy's share sheet), **Start** for the host only (the others see "Waiting for the host"), and **Leave**.
 6. **Opened from an invite link** (`juicy.rooms.invited()`): skip the menu and join that room's lobby.
 
-Errors (a wrong code, a full room, signed out) show as a short line on the screen the player is on, which stays open. A closed room goes back to the Multiplayer screen with the reason.
+Errors (a wrong code, a full room, signed out) show as a short line on the screen the player is on, which stays open. A closed room goes back to the Multiplayer screen with the reason (`KICKED`: "You were removed from the lobby").
 
 ## Using it
 ```js
@@ -545,6 +546,7 @@ function start(room) {
   leaveButton.onclick = () => room.leave();
   room.on("join", () => showLobby(room));
   room.on("leave", () => showLobby(room));
+  // In showLobby, the host's row for each other player gets a × button: () => room.kick(player.id)
   room.on("host", () => showLobby(room)); // the new host gets the switch and Start
   room.on("public", (isPublic) => showPublic(isPublic));
   room.on("message", (data, from) => (data.k === "start" ? beginGame(room) : handle(data, from)));

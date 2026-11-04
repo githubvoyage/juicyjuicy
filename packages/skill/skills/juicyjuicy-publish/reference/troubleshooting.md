@@ -6,7 +6,7 @@ With `--json`, a failed command's last line is `{"ok": false, "error": {"code", 
 
 | Code | Meaning | Fix |
 |---|---|---|
-| `UNAUTHORIZED` | No saved login, or the token was revoked. | `npx -y juicyjuicy@0.11.1 login --json` (the user approves in the browser). In CI, set `JUICY_TOKEN`. |
+| `UNAUTHORIZED` | No saved login, or the token was revoked. | `npx -y juicyjuicy@0.11.2 login --json` (the user approves in the browser). In CI, set `JUICY_TOKEN`. |
 | `EXPIRED_TOKEN` | The login code expired (10 minutes) or was used. | Run `login` again. |
 | `ACCESS_DENIED` | The user clicked Deny. | Ask them, then run `login` again. |
 
