@@ -26,7 +26,8 @@ The manifest in the project folder. `juicyjuicy init` writes it; edit it by hand
 
 | Field | Required | Rules | `init` flag |
 |---|---|---|---|
-| `slug` | yes | 3–40 chars, lowercase letters, digits, single dashes. The game's URL: `/g/<slug>`. Owned by whoever publishes it first. | `--slug` |
+| `slug` | yes | 3–40 chars, lowercase letters, digits, single dashes. The game's URL: `/g/<slug>`. Owned by whoever publishes it first. Don't change it once published: a new slug is a new game (renaming a game means a new `title`). | `--slug` |
+| `id` | | Written by `publish` (and `pull`): the game this folder publishes to. Don't edit. A publish whose `slug` names another game is refused with `SLUG_CHANGED`; remove `id` only to publish a copy of the folder as a separate new game. | |
 | `title` | yes | Up to 60 characters. | `--title` |
 | `description` | | Up to 500 characters. One or two sentences: what you do, how you control it. | `--description` |
 | `buildDir` | | Folder that gets uploaded, relative to the project. Default `.`. | `--build-dir` |
