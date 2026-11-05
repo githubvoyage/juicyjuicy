@@ -6,7 +6,7 @@ With `--json`, a failed command's last line is `{"ok": false, "error": {"code", 
 
 | Code | Meaning | Fix |
 |---|---|---|
-| `UNAUTHORIZED` | No saved login, or the token was revoked. | `npx -y juicyjuicy@0.11.2 login --json` (the user approves in the browser). In CI, set `JUICY_TOKEN`. |
+| `UNAUTHORIZED` | No saved login, or the token was revoked. | `npx -y juicyjuicy@0.12.0 login --json` (the user approves in the browser). In CI, set `JUICY_TOKEN`. |
 | `EXPIRED_TOKEN` | The login code expired (10 minutes) or was used. | Run `login` again. |
 | `ACCESS_DENIED` | The user clicked Deny. | Ask them, then run `login` again. |
 
@@ -23,6 +23,9 @@ With `--json`, a failed command's last line is `{"ok": false, "error": {"code", 
 | `SLUG_TAKEN` | Another creator owns this slug. | Choose a new slug: `init --slug <new-slug>`. |
 | `GAME_LIMIT_REACHED` | The user has 25 games already. | They delete one on the site, or update an existing game instead. |
 | `FORBIDDEN` | The game was removed by an admin, or isn't theirs. | Publish under a new slug; ask an admin if unsure. |
+| `CHANGES_REQUESTED` | `rollback` to a version a JuicyJuicy moderator asked changes to; the message quotes their comment. | It can't go live. Show the comment to the user word for word and follow [moderation.md](moderation.md): with their OK, make the changes and publish a new version. |
+| `VERSION_REJECTED` | `rollback` to a version a moderator rejected; the message quotes their comment, if any. | It can never go live. Tell the user, quoting the comment, and publish a new version if they want one ([moderation.md](moderation.md)). |
+| `GAME_BLOCKED` | Listing a game JuicyJuicy's moderators blocked; the message quotes their comment. | Only an admin lists it again. Show the comment, and with the user's OK fix the game, then `recheck` it ([moderation.md](moderation.md)). |
 | `UPLOAD_INCOMPLETE` | Files changed or went missing during the upload, or an upload link expired. With `remix`: a downloaded file didn't match its published SHA-256. | Wait for builds to finish and publish again; for `remix`, run it again into a new folder. |
 | `NOT_REMIXABLE` | `remix` on a game whose creator hasn't allowed remixes. | Tell the user; there's no way around it. |
 | `UNSAFE_CONTENT` | A game check found something that can't be published: an API key or token (`secret-key`), a program or installer (`executable`) crypto-mining code (`crypto-miner`), or a threaded Godot export (`godot-threads`). Each item in `details` has its `rule` and `path`. The server runs the same checks, so there's no way around them. | Explain each one. A key: remove it from the game and tell the user to revoke it, since anyone could have copied it; move the call behind their own server if the game needs it. An executable: remove it. A threaded Godot export: export again with Thread Support off in the Web preset. Then `check` again. |
@@ -35,6 +38,7 @@ With `--json`, a failed command's last line is `{"ok": false, "error": {"code", 
 | `NETWORK_BLOCKED` | Something that isn't JuicyJuicy refused the request: a sandbox's domain allowlist (Claude Cowork, claude.ai and other chat apps), a proxy or a firewall. It answered 403 without JuicyJuicy's error, or the host had no DNS or refused the connection. `details.host` is the blocked host, `details.allow` the hosts to allow. | Don't retry. Tell the user to allow `juicyjuicy.games` and `*.r2.cloudflarestorage.com` (the upload storage) in the app's network or domain settings, and to make a token at https://juicyjuicy.games/settings/tokens, since a login saved in a sandbox may not last. Run again with `JUICY_TOKEN=<token>`. Outside a sandbox: their network or a proxy blocks it. |
 | `PUBLISHING_PAUSED` | JuicyJuicy's admins paused publishing for a while (maintenance or an incident). Games already published keep playing. | Tell the user and try again later; don't retry in a loop. |
 | `RATE_LIMITED` | Too many requests (e.g. more than 30 publishes in an hour). | Wait for `details.retryAfterSeconds` (the message says how long), then retry. Don't loop. |
+| `UPLOAD_BUDGET_REACHED` | Too many files uploaded: by this creator in the last 24 hours (`details.scope` is `member`, 15,000 files), or by everyone on JuicyJuicy at once (`site`; publishing is then paused until an admin checks). Games already published keep playing. | Tell the user and stop; don't retry in a loop. For `member`, try again after `details.retryAfterSeconds`, batch changes into fewer publishes and pack many small assets into fewer files (sprite sheets, audio sprites). |
 | `INTERNAL_ERROR` | A bug on JuicyJuicy's side. | Retry once; if it persists, tell the user it's a server problem. |
 
 ## Things that publish fine but look wrong
