@@ -6,7 +6,7 @@ With `--json`, a failed command's last line is `{"ok": false, "error": {"code", 
 
 | Code | Meaning | Fix |
 |---|---|---|
-| `UNAUTHORIZED` | No saved login, or the token was revoked. | `npx -y juicyjuicy@0.12.0 login --json` (the user approves in the browser). In CI, set `JUICY_TOKEN`. |
+| `UNAUTHORIZED` | No saved login, or the token was revoked. | `npx -y juicyjuicy@0.13.0 login --json` (the user approves in the browser). In CI, set `JUICY_TOKEN`. |
 | `EXPIRED_TOKEN` | The login code expired (10 minutes) or was used. | Run `login` again. |
 | `ACCESS_DENIED` | The user clicked Deny. | Ask them, then run `login` again. |
 
@@ -17,14 +17,15 @@ With `--json`, a failed command's last line is `{"ok": false, "error": {"code", 
 | `INVALID_MANIFEST` | `juicy.json` is missing, isn't JSON, or a field breaks a rule (`details` says which). | No file: run `init`. Otherwise fix the listed fields (see manifest.md). |
 | `ENTRY_MISSING` | The build folder doesn't exist, or has no entry file. | Run the build. Check `buildDir` and `entry`. |
 | `INVALID_PATH` | A file name is unsafe (backslash, control character, too long, …). | Rename the file (POSIX names, under 256 characters). |
-| `TOO_LARGE` | A file is over 100 MB, the whole build over 150 MB, or the thumbnail over 2 MB or 4096 pixels wide or high. Or the user's games together take up more than their 2 GB of storage (the message says "your games already take up"). | Compress or remove assets; resize the thumbnail. For storage: the user deletes a game they don't need on the site; only the newest 5 versions of each game are kept, and old ones are cleaned up daily. |
+| `TOO_LARGE` | A file is over 100 MB, the whole build over 150 MB, or the thumbnail over 2 MB or 4096 pixels wide or high. Or the user's games together take up more than their 2 GB of storage (the message says "your games already take up"). | Compress or remove assets; resize the thumbnail. For storage: the user deletes a game they don't need on the site. Only what each game can still use counts (its live version, the one before it, an update waiting for review and its newest draft); JuicyJuicy deletes the rest. |
 | `TOO_MANY_FILES` | More than 3,000 files. | Bundle or pack assets (sprite sheets, atlases). |
 | `VALIDATION_FAILED` | Something else is malformed, e.g. a thumbnail that isn't png/jpg/webp or a file that's missing. Or the message says the CLI is out of date: JuicyJuicy needs a newer release than the one run. | Follow the message. For an out-of-date CLI, run the `setup` command it gives (it updates the CLI and the skill), read the skill again and use the release it names. |
 | `SLUG_TAKEN` | Another creator owns this slug. | Choose a new slug: `init --slug <new-slug>`. |
 | `GAME_LIMIT_REACHED` | The user has 25 games already. | They delete one on the site, or update an existing game instead. |
 | `FORBIDDEN` | The game was removed by an admin, or isn't theirs. | Publish under a new slug; ask an admin if unsure. |
-| `CHANGES_REQUESTED` | `rollback` to a version a JuicyJuicy moderator asked changes to; the message quotes their comment. | It can't go live. Show the comment to the user word for word and follow [moderation.md](moderation.md): with their OK, make the changes and publish a new version. |
-| `VERSION_REJECTED` | `rollback` to a version a moderator rejected; the message quotes their comment, if any. | It can never go live. Tell the user, quoting the comment, and publish a new version if they want one ([moderation.md](moderation.md)). |
+| `CHANGES_REQUESTED` | `go-live` on a draft a JuicyJuicy moderator asked changes to; the message quotes their comment. | It can't go live. Show the comment to the user word for word and follow [moderation.md](moderation.md): with their OK, make the changes and publish a new version. |
+| `VERSION_REJECTED` | `go-live` on a draft a moderator rejected; the message quotes their comment, if any. | It can never go live. Tell the user, quoting the comment, and publish a new version if they want one ([moderation.md](moderation.md)). |
+| `ROLLBACK_REMOVED` | An older CLI's `rollback`: JuicyJuicy no longer goes back to earlier versions. | Use the CLI release this skill names. To change the game, publish a new version; to make the newest draft live, `go-live`. If the user wanted an earlier version back, publish its files from their own copy (e.g. git) as a new version. |
 | `GAME_BLOCKED` | Listing a game JuicyJuicy's moderators blocked; the message quotes their comment. | Only an admin lists it again. Show the comment, and with the user's OK fix the game, then `recheck` it ([moderation.md](moderation.md)). |
 | `UPLOAD_INCOMPLETE` | Files changed or went missing during the upload, or an upload link expired. With `remix`: a downloaded file didn't match its published SHA-256. | Wait for builds to finish and publish again; for `remix`, run it again into a new folder. |
 | `NOT_REMIXABLE` | `remix` on a game whose creator hasn't allowed remixes. | Tell the user; there's no way around it. |
@@ -39,6 +40,7 @@ With `--json`, a failed command's last line is `{"ok": false, "error": {"code", 
 | `PUBLISHING_PAUSED` | JuicyJuicy's admins paused publishing for a while (maintenance or an incident). Games already published keep playing. | Tell the user and try again later; don't retry in a loop. |
 | `RATE_LIMITED` | Too many requests (e.g. more than 30 publishes in an hour). | Wait for `details.retryAfterSeconds` (the message says how long), then retry. Don't loop. |
 | `UPLOAD_BUDGET_REACHED` | Too many files uploaded: by this creator in the last 24 hours (`details.scope` is `member`, 15,000 files), or by everyone on JuicyJuicy at once (`site`; publishing is then paused until an admin checks). Games already published keep playing. | Tell the user and stop; don't retry in a loop. For `member`, try again after `details.retryAfterSeconds`, batch changes into fewer publishes and pack many small assets into fewer files (sprite sheets, audio sprites). |
+| `PUBLISH_LIMIT_REACHED` | The user published as many versions as JuicyJuicy allows in 24 hours: 15 across all their games (`details.scope` is `creator`) or 5 of this game (`game`). Every version counts, drafts too; `go-live` doesn't. Nothing was uploaded. | Don't retry before `details.nextAt`. Tell the user when the next publish is possible (the message gives the time in their zone) and, for `game`, that their other games can still be published. Meanwhile keep working locally: run and test the game in dev, and publish the fixes together as one update. |
 | `INTERNAL_ERROR` | A bug on JuicyJuicy's side. | Retry once; if it persists, tell the user it's a server problem. |
 
 ## Things that publish fine but look wrong

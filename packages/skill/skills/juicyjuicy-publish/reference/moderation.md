@@ -13,7 +13,7 @@ JuicyJuicy's moderators (its admins) can leave the user a written comment about 
 
 - `publish --json`: each open note is a `{"event": "warning"}` line, and the result has `moderation` (`blocked`, and `versions` with the open change requests and rejections), `warnings` (the user's warnings they haven't dismissed) and `moderationNotice`.
 - `list <slug> --json`: `game.blocked`, each version's `changesRequested` and `rejected` (only notes with `resolvedAt: null` are still open), and `moderation` with the open ones.
-- Errors: `rollback` to such a version answers `CHANGES_REQUESTED` or `VERSION_REJECTED`, and listing a blocked game answers `GAME_BLOCKED`, with the comment in the message.
+- Errors: `go-live` on such a draft answers `CHANGES_REQUESTED` or `VERSION_REJECTED`, and listing a blocked game answers `GAME_BLOCKED`, with the comment in the message.
 
 ## What to do
 
@@ -25,7 +25,7 @@ JuicyJuicy's moderators (its admins) can leave the user a written comment about 
    - after a change request or a rejection: run the review steps and publish a new version (`publish --json`, with a `--message` that says what changed). Tell the user it goes through the safety check again and may wait for a moderator.
    - after a block: publish if the game's files changed (a new title or description in `juicy.json` also goes out with a publish), then ask for another look:
      ```bash
-     npx -y juicyjuicy@0.12.0 recheck <slug> --reply "<what the user changed, in their words>" --json
+     npx -y juicyjuicy@0.13.0 recheck <slug> --reply "<what the user changed, in their words>" --json
      ```
      The game stays unlisted until an admin lists it again; tell the user that. Write the reply with the user, and keep it to what was changed.
 4. **If the user doesn't want to change it**, stop. A version with changes requested or rejected never goes live, and a blocked game stays unlisted. Don't try to get around the note: don't republish the same thing to clear it, rename the game, or publish it under a new slug.
