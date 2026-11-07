@@ -3,7 +3,8 @@
 Publishes a browser game to [juicyjuicy.games](https://juicyjuicy.games) on every push. The game
 needs a `juicy.json` (make one with `npx juicyjuicy init`). See ARCHITECTURE §13.
 
-1. Make a token at https://juicyjuicy.games/settings/tokens.
+1. Make a token at https://juicyjuicy.games/settings/tokens. Pick **Publish only, for CI**: it
+   can publish and list your games and nothing else, so a leaked secret can't do more.
 2. In your repository: **Settings → Secrets and variables → Actions → New repository secret**,
    name `JUICY_TOKEN`, value the token.
 3. Add `.github/workflows/juicyjuicy.yml`:

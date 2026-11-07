@@ -95,9 +95,12 @@ window.juicy.rooms || (function (juicy) {
     this.link = null;
     this.opened = false;
     this.closed = false;
+    this.reconnecting = false;
   }
   // Events: "message" (data, fromId), "join" (player), "leave" (player), "host" (id),
-  // "lock" (locked), "public" (isPublic), "error" (error), "close" (reason).
+  // "lock" (locked), "public" (isPublic), "error" (error), "close" (reason),
+  // "reconnecting" (attempt: 1 to 3; show "Reconnecting...", sends meanwhile are dropped) and
+  // "reconnected" (back in the room; "join", "leave" and "host" have told what changed).
   Room.prototype.on = function (event, handler) {
     (this.handlers[event] = this.handlers[event] || []).push(handler);
     return this;
@@ -148,6 +151,7 @@ window.juicy.rooms || (function (juicy) {
   Room.prototype.end = function (reason) {
     if (this.closed) return;
     this.closed = true;
+    this.reconnecting = false;
     var link = this.link;
     this.link = null;
     if (link) link.close();
@@ -202,9 +206,10 @@ window.juicy.rooms || (function (juicy) {
     }
   };
 
-  // JuicyJuicy's relay: resolves once it has welcomed this player.
-  function connect(room, query) {
-    return askTicket(true).then(function (m) {
+  // JuicyJuicy's relay: resolves once it has welcomed this player. "ticket" is the player's answer
+  // with a ticket when there is one already, else a new one is asked for.
+  function connect(room, query, ticket) {
+    return (ticket ? Promise.resolve(ticket) : askTicket(true)).then(function (m) {
       return new Promise(function (resolve, reject) {
         var socket = new WebSocket(m.url + "?ticket=" + encodeURIComponent(m.ticket) + query);
         var welcomed = false;
@@ -227,6 +232,10 @@ window.juicy.rooms || (function (juicy) {
             welcomed = true;
             room.link = link;
             room.receive(message);
+            if (room.reconnecting) {
+              room.reconnecting = false;
+              room.emit("reconnected");
+            }
             return resolve(room);
           }
           if (room.link === link) room.receive(message);
@@ -246,6 +255,8 @@ window.juicy.rooms || (function (juicy) {
   function reconnect(room, attempt) {
     if (room.closed) return;
     if (attempt === 3) return room.end("DISCONNECTED");
+    room.reconnecting = true;
+    room.emit("reconnecting", attempt + 1);
     setTimeout(function () {
       if (room.closed) return;
       connect(room, "&room=" + room.code).catch(function (e) {
@@ -447,7 +458,7 @@ window.juicy.rooms || (function (juicy) {
         var room = new Room(null);
         if (m) {
           return connect(room, "&create=1&max=" + max + (listed ? "&public=1" : "") +
-            (label ? "&label=" + label : ""));
+            (label ? "&label=" + label : ""), m);
         }
         room.code = newCode();
         return joinLocal(room, max, { public: listed, label: label });
@@ -458,7 +469,7 @@ window.juicy.rooms || (function (juicy) {
       code = String(code || "").trim().toUpperCase();
       return askTicket(true).then(function (m) {
         var room = new Room(code);
-        return m ? connect(room, "&room=" + encodeURIComponent(code)) : joinLocal(room, 0);
+        return m ? connect(room, "&room=" + encodeURIComponent(code), m) : joinLocal(room, 0);
       });
     },
     // The game's public rooms that can be joined now (not full or locked), newest first:
@@ -550,6 +561,8 @@ function start(room) {
   room.on("host", () => showLobby(room)); // the new host gets the switch and Start
   room.on("public", (isPublic) => showPublic(isPublic));
   room.on("message", (data, from) => (data.k === "start" ? beginGame(room) : handle(data, from)));
+  room.on("reconnecting", () => showStatus("Reconnecting…")); // a dropped connection, up to 3 tries
+  room.on("reconnected", () => showStatus(""));
   room.on("close", (reason) => { showScreen("multiplayer"); showError(reason); });
 }
 ```
@@ -560,7 +573,7 @@ function start(room) {
 - `juicy.rooms.list({ label })` resolves to the public rooms that can be joined now, newest first, at most 50: `[{ code, host, players, max, label }]` (`host` is the host's login). Full and locked rooms aren't in it. With `label`, only rooms with that label. It rejects like `create()` (`SIGNED_OUT`, `RATE_LIMITED`, `PAUSED`, `OFF`, `FAILED`, `TIMEOUT`). Join one with `join(room.code)`.
 - The room: `room.code`, `room.me` (this player's id, like `"p2"`), `room.host` (the host's id), `room.isHost()`, `room.players` (`{ id, name }`, name being the member's JuicyJuicy login), `room.player(id)`, `room.locked`, `room.max`, `room.public` and `room.label`.
 - `room.send(data)` sends any JSON value to everyone else; `room.send(data, id)` only to that player. A player never gets their own messages.
-- `room.on(event, handler)`: `"message"` (data, fromId), `"join"` (player), `"leave"` (player), `"host"` (the new host's id), `"lock"` (locked), `"public"` (whether it's listed), `"error"` (an `Error` with a `code`: `RATE_LIMITED`, `TOO_LARGE`, `NOT_HOST`, `NO_PLAYER`, `INVALID`; the room goes on), `"close"` (reason: `LEFT`, `KICKED`, `REPLACED` (the same player joined from another tab), `ROOM_NOT_FOUND`, `TOO_FAST`, `GAME_GONE`, `OFF` or `DISCONNECTED`).
+- `room.on(event, handler)`: `"message"` (data, fromId), `"join"` (player), `"leave"` (player), `"host"` (the new host's id), `"lock"` (locked), `"public"` (whether it's listed), `"error"` (an `Error` with a `code`: `RATE_LIMITED`, `TOO_LARGE`, `NOT_HOST`, `NO_PLAYER`, `INVALID`; the room goes on), `"reconnecting"` (the attempt, 1 to 3: the connection dropped and the room is trying to come back; show "Reconnecting…" over the game, and know that `send()` does nothing meanwhile), `"reconnected"` (back in the room; `join`, `leave` and `host` have already told what changed while away), `"close"` (reason: `LEFT`, `KICKED`, `REPLACED` (the same player joined from another tab), `ROOM_NOT_FOUND`, `TOO_FAST`, `GAME_GONE` (the game was taken down: its open rooms close within 30 seconds), `OFF` or `DISCONNECTED` (the three tries failed)).
 - The host only: `room.lock()` stops new players joining (players who were in can come back) and takes a public room off the list, `room.lock(false)` opens it again; `room.kick(id)` removes a player for good (they don't see the room in the list either); `room.setPublic(false)` makes a public room invite-only, `room.setPublic()` lists it.
 - `room.invite()` shows JuicyJuicy's share sheet over the game and returns the link (`https://juicyjuicy.games/g/<slug>/play?room=CODE`).
 - `room.leave()` leaves the room.

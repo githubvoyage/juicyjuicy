@@ -6,7 +6,7 @@ With `--json`, a failed command's last line is `{"ok": false, "error": {"code", 
 
 | Code | Meaning | Fix |
 |---|---|---|
-| `UNAUTHORIZED` | No saved login, or the token was revoked. | `npx -y juicyjuicy@0.13.0 login --json` (the user approves in the browser). In CI, set `JUICY_TOKEN`. |
+| `UNAUTHORIZED` | No saved login, or the token was revoked. | `npx -y juicyjuicy@0.14.0 login --json` (the user approves in the browser). In CI, set `JUICY_TOKEN`. |
 | `EXPIRED_TOKEN` | The login code expired (10 minutes) or was used. | Run `login` again. |
 | `ACCESS_DENIED` | The user clicked Deny. | Ask them, then run `login` again. |
 
@@ -41,6 +41,7 @@ With `--json`, a failed command's last line is `{"ok": false, "error": {"code", 
 | `RATE_LIMITED` | Too many requests (e.g. more than 30 publishes in an hour). | Wait for `details.retryAfterSeconds` (the message says how long), then retry. Don't loop. |
 | `UPLOAD_BUDGET_REACHED` | Too many files uploaded: by this creator in the last 24 hours (`details.scope` is `member`, 15,000 files), or by everyone on JuicyJuicy at once (`site`; publishing is then paused until an admin checks). Games already published keep playing. | Tell the user and stop; don't retry in a loop. For `member`, try again after `details.retryAfterSeconds`, batch changes into fewer publishes and pack many small assets into fewer files (sprite sheets, audio sprites). |
 | `PUBLISH_LIMIT_REACHED` | The user published as many versions as JuicyJuicy allows in 24 hours: 15 across all their games (`details.scope` is `creator`) or 5 of this game (`game`). Every version counts, drafts too; `go-live` doesn't. Nothing was uploaded. | Don't retry before `details.nextAt`. Tell the user when the next publish is possible (the message gives the time in their zone) and, for `game`, that their other games can still be published. Meanwhile keep working locally: run and test the game in dev, and publish the fixes together as one update. |
+| `REVIEW_ALLOWANCE_REACHED` | The user's versions used up this month's share of JuicyJuicy's automatic safety checks (each creator gets one; a new account a smaller one in its first week). Nothing was uploaded; published games keep playing. Older CLIs show it as `RATE_LIMITED` with the same message. | Don't retry before `details.nextAt` (the first of next month, or when the account's first week ends). Tell the user when they can publish again (the message says) and keep working locally meanwhile, so the next publish is one well-tested update. |
 | `INTERNAL_ERROR` | A bug on JuicyJuicy's side. | Retry once; if it persists, tell the user it's a server problem. |
 
 ## Things that publish fine but look wrong
