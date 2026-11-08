@@ -24,7 +24,7 @@ If it exits with `2`, log in. `login` opens the user's browser and **waits up to
 - Run `npx -y juicyjuicy@0.15.0 login --json` in the background if your shell can, and read its first output line (`{"event": "device_code", "userCode", "verificationUrl"}`) right away, and show the user the code and link without waiting for them to ask: the page shows the same code, and that's how they know the login is theirs.
 - Then tell the user, with the real code and link: *"A JuicyJuicy page opened in your browser. Check it shows the code **WXTZ-BCDF** and click **Approve**. If no page opened, go to <verificationUrl>."*
 - If your shell can't run commands in the background, say that first (without a code: it doesn't exist yet), then run it in the foreground with a timeout of at least 10 minutes. The code is also printed as `Your code: …`.
-- The user needs a JuicyJuicy account (it's invite-only for now). If the page says they can't sign in, they need an invite link from a friend who's a member.
+- The user needs a JuicyJuicy account. If they don't have one yet, they can make one on the sign-in page that opens.
 
 In CI there's no browser: the `JUICY_TOKEN` environment variable holds a token instead.
 
