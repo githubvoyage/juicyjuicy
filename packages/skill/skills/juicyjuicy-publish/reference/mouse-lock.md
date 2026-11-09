@@ -1,6 +1,6 @@
 # Upgrade: mouse lock
 
-Aiming or steering with the mouse keeps the cursor in the game. Read this when the user asks for mouse lock (the JuicyJuicy Upgrades panel's prompt names this file), then follow "Add a JuicyJuicy upgrade" in SKILL.md to publish it.
+Aiming or steering with the mouse keeps the cursor in the game. Read this when the publish standards in SKILL.md find a game that aims or steers with the mouse without locking it, or when the user asks for mouse lock. JuicyJuicy doesn't lock the mouse for a game: the frame only allows it, and the game has to ask. If the user's game needs it, follow "Add a JuicyJuicy upgrade" in SKILL.md to publish the change.
 
 ## Why
 In a game that turns a camera or aims with the mouse, turning fast drags the cursor out of the game's frame, onto the page or another screen, and the game stops getting the movement. Pointer Lock hides the cursor and keeps sending movement however far the mouse goes. JuicyJuicy's frame allows it.
@@ -19,4 +19,4 @@ In a game that turns a camera or aims with the mouse, turning fast drags the cur
 Run the game: a click locks the cursor and turning works far past the frame's edges; Esc gives the mouse back and the game pauses with "Click to play"; a click resumes; menus can be clicked.
 
 ## Declare it
-Add `"mouse-lock"` to `features` in `juicy.json` (create the list if it isn't there, adding to what's listed). JuicyJuicy can't detect this one from the files, so the declaration is what turns it On in the panel; only add it once the lock works this way.
+Nothing to declare: mouse lock isn't a row in the Upgrades panel, so leave `features` as it is. A `juicy.json` that already lists `mouse-lock` is fine as it is too.
