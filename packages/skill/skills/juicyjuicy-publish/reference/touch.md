@@ -15,7 +15,7 @@ For a new game meant for phones, decide the shape before anything else and build
 - **Keep the top-left corner clear**: about 140×52 CSS pixels (plus `env(safe-area-inset-left)`) is where JuicyJuicy's pill sits. Put the score, pause and menu buttons top-right, along the top centre or at the bottom.
 - **Put the main actions under the thumbs**: the bottom third of the screen, targets at least 44×44 CSS pixels. Buttons get `touch-action: manipulation` (no double-tap zoom or tap delay) and `-webkit-tap-highlight-color: transparent`; a list that scrolls inside the game (levels, a shop) gets `overflow-y: auto; touch-action: pan-y` on that list alone.
 - **Feel it**: a short `navigator.vibrate(10)` on taps and a pattern on win or loss (Android; iPhones ignore it), inside `try`, and never as the only feedback.
-- Declare `"platforms": ["mobile"]` (add `"desktop"` too only if it also plays well with a mouse on a big screen; a phone-only game still plays on a computer by link, in a phone-shaped box), `"input": ["touch", …]` and `"features": ["touch"]`.
+- Declare `"platforms": ["mobile"]` (add `"desktop"` after it, `["mobile", "desktop"]`, only if it also plays well with a mouse on a big screen; a phone-only game still plays on a computer by link, in a phone-shaped box), `"input": ["touch", …]` and `"features": ["touch"]`.
 
 Then go through "What to change" below as a checklist.
 
@@ -57,4 +57,4 @@ Device mode can't show everything, sound on iPhones above all: before publishing
 Some games can't work on a phone, such as one that needs a full keyboard all the time. Tell the user why, do what still helps (screen fit, readable text) if they want it, and don't declare it: the game stays on the Computer tab only, and phone players who open its link are told it's made for a computer.
 
 ## Declare it
-Add `"touch"` to `input` in `juicy.json` (`"input": ["keyboard", "touch"]`, keeping what's there), `"touch"` to `features` (`"features": ["touch"]`, adding to the list) and `"mobile"` to `platforms` (`"platforms": ["desktop", "mobile"]`). JuicyJuicy can't detect this one from the files: `input` is what the site's chip reads, `features` is what ends the Upgrades panel's offer and `platforms` puts the game on the Phone tab, so only add them once a full round plays well by touch at phone size. Tell the user the game will now show on the Phone tab.
+Add `"touch"` to `input` in `juicy.json` (`"input": ["keyboard", "touch"]`, keeping what's there), `"touch"` to `features` (`"features": ["touch"]`, adding to the list) and `"mobile"` to `platforms` after what's there (`"platforms": ["desktop", "mobile"]`: still made mainly for a computer). JuicyJuicy can't detect this one from the files: `input` is what the site's chip reads, `features` is what ends the Upgrades panel's offer and `platforms` puts the game on the Phone tab, so only add them once a full round plays well by touch at phone size. Tell the user the game will now show on the Phone tab.
