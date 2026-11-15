@@ -9,19 +9,19 @@ JuicyJuicy hosts **static browser games** (HTML/JS/CSS/assets, WebAssembly) and 
 
 Run every CLI command with `--json`. Each output line is a JSON object; the **last** line is the result, either `{"ok": true, …}` or `{"ok": false, "error": {"code", "message", "details"?, "hint"?}}`. The exit code is `0` (ok), `1` (fix the game or `juicy.json`), `2` (log in) or `3` (network or server problem, so retry).
 
-Run the CLI exactly as written here, `npx -y juicyjuicy@0.16.0 …`: this skill is made for that release. If JuicyJuicy answers that the CLI is out of date, run the command its message gives. It updates the CLI and this skill together; read this skill again afterwards and use the release it names from then on.
+Run the CLI exactly as written here, `npx -y juicyjuicy@0.17.0 …`: this skill is made for that release. If JuicyJuicy answers that the CLI is out of date, run the command its message gives. It updates the CLI and this skill together; read this skill again afterwards and use the release it names from then on.
 
 ## Procedure
 
 ### 1. Make sure the CLI is logged in
 
 ```bash
-npx -y juicyjuicy@0.16.0 whoami --json
+npx -y juicyjuicy@0.17.0 whoami --json
 ```
 
 If it exits with `2`, log in. `login` opens the user's browser and **waits up to 10 minutes** for them to approve:
 
-- Run `npx -y juicyjuicy@0.16.0 login --json` in the background if your shell can, and read its first output line (`{"event": "device_code", "userCode", "verificationUrl"}`) right away, and show the user the code and link without waiting for them to ask: the page shows the same code, and that's how they know the login is theirs.
+- Run `npx -y juicyjuicy@0.17.0 login --json` in the background if your shell can, and read its first output line (`{"event": "device_code", "userCode", "verificationUrl"}`) right away, and show the user the code and link without waiting for them to ask: the page shows the same code, and that's how they know the login is theirs.
 - Then tell the user, with the real code and link: *"A JuicyJuicy page opened in your browser. Check it shows the code **WXTZ-BCDF** and click **Approve**. If no page opened, go to <verificationUrl>."*
 - If your shell can't run commands in the background, say that first (without a code: it doesn't exist yet), then run it in the foreground with a timeout of at least 10 minutes. The code is also printed as `Your code: …`.
 - The user needs a JuicyJuicy account. If they don't have one yet, they can make one on the sign-in page that opens.
@@ -45,11 +45,12 @@ Files and folders starting with `.` (`.env`, `.git/`, …) and `node_modules/` a
 `juicy.json` sits in the project folder and describes the game. Create or update it with `init`, filling in what you know from the game you built:
 
 ```bash
-npx -y juicyjuicy@0.16.0 init --yes --json \
+npx -y juicyjuicy@0.17.0 init --yes --json \
   --title "Snake Deluxe" \
   --description "Eat the apples, don't bite your tail. Arrow keys or swipe." \
   --made-with "<your model name>, <the tool you run in>" \
-  --input keyboard,touch --genres arcade --tags classic --age-rating everyone
+  --input keyboard,touch --platforms desktop,mobile \
+  --genres arcade --tags classic --age-rating everyone
 ```
 
 - `init` keeps what an existing `juicy.json` already says (flags override), and detects `buildDir`, `entry` and `engine`. Check what it wrote.
@@ -59,6 +60,10 @@ npx -y juicyjuicy@0.16.0 init --yes --json \
 - `--genres`: 1 to 3 from the list below, usually 1 or 2, the main one first. Required: `check` and `publish` stop without them, and refuse a genre that isn't on the list.
 - `--tags`: up to 3 **themes**, the setting or subject, e.g. `space`, `pirates`, `zombies`, `blackjack`. Not genres (`puzzle`, `roguelike` go in `--genres`) and not features (touch, remixable, leaderboards, languages: JuicyJuicy shows those by itself from the game). One exception: add `multiplayer` (not counted among the 3) when players play together, online or on one screen, and the game doesn't use JuicyJuicy's rooms; it puts the game in the multiplayer filter. None is fine.
 - `--age-rating`: who the game is for, from what's in it. **You rate every game you publish**; the game page shows it as a label.
+- `--platforms`: where the game is made to be played, `desktop`, `mobile` or both. JuicyJuicy splits its games into a **Computer** and a **Phone** tab, and phones open on Phone, so this decides who finds the game. `desktop` for keyboard-and-mouse games. `mobile` only for a game you've played start to finish by touch at phone size (about 390×844 and the other way round if it turns), following [reference/touch.md](reference/touch.md); it needs `touch` in `--input`. A game made for phones first (portrait, tap to play) is usually `mobile` alone, so it doesn't crowd the Computer tab; it still plays on a computer by link. On a first publish:
+  - **Clear-cut, choose it yourself and say so in a sentence**: keyboard or mouse only, or a game that needs a big screen → `desktop`; built for phones following touch.md → `mobile`.
+  - **In between, ask the user once**, with your suggestion, before publishing: a game that takes touch but was laid out for a computer, or plays both ways. E.g. *"Should this be listed for phones too? It plays by touch, but I'd only add the Phone tab after we've checked a whole round on a phone-sized screen; I can do that now."* If they want it on phones, go through [reference/touch.md](reference/touch.md) first.
+  - On updates keep it unless the game changed. `check` and `publish` print where the game is listed and nudge a touch game that isn't on Phone: pass that on to the user, don't act on it alone.
 
 All fields: [reference/manifest.md](reference/manifest.md).
 
@@ -127,7 +132,7 @@ To replace it, the user saves a screenshot as `thumbnail.png` in the project fol
 
 Do this **every time**, also for updates. It protects the user and their players; JuicyJuicy's server runs its own checks as well, so this is help, not a formality to get past.
 
-1. **Check.** Run `npx -y juicyjuicy@0.16.0 check --json`. Errors (a failed result) must be fixed: explain each one (`details` has a `rule` and a `path`), and offer to fix it. If the user says no, **stop and don't publish**: the server would refuse it anyway. Warnings in the result (`findings`) go into step 2.
+1. **Check.** Run `npx -y juicyjuicy@0.17.0 check --json`. Errors (a failed result) must be fixed: explain each one (`details` has a `rule` and a `path`), and offer to fix it. If the user says no, **stop and don't publish**: the server would refuse it anyway. Warnings in the result (`findings`) go into step 2.
    Every file in the result's `files` will be public. If `unusualFiles` isn't empty (names that look like keys or private data, project files like `package.json`, notes and other files a web game doesn't load), **show the user that list and ask whether those files should be public** before publishing; offer to move them out of the build folder or set `buildDir` to a folder with just the game.
 2. **Security review.** Follow [reference/review.md](reference/review.md): keys and tokens, `innerHTML`/`eval` on network or multiplayer data, `http://` loads, trackers, login or payment forms, anything that leaves the page. Same rule: for what it marks as must-fix, fix it or don't publish.
 3. **Standards.** Check the game against these and tell the user, in a sentence or two, what falls short; offer to fix it. A "no" still publishes: not every game can have touch controls.
@@ -138,6 +143,7 @@ Do this **every time**, also for updates. It protects the user and their players
    - Fills its window when resized, so it plays both on the page and in fullscreen.
    - Never freezes: no loop that can run forever, and a 0×0 window pauses the game instead of restarting it.
    - Has the controls players need, including touch for phones when the game allows it.
+   - Fits the devices `platforms` names: a game listed for `mobile` fills a phone screen, keeps its text readable and plays a whole round by touch ([reference/touch.md](reference/touch.md)); `check` warns (`mobile-basics`) about what's missing. Whenever the user asks for a phone version, mobile support or touch controls, go through all of touch.md (screen size with the browser's bars, safe areas, sharp drawing, the pill's corner, controls, sound), not only the controls.
    - Mouse control doesn't stop at the frame's edge: drags use pointer capture, games that aim or steer with the mouse use Pointer Lock.
    - Saves progress with JuicyJuicy's window.juicy snippet, if it saves at all, so it follows signed-in players to any browser (not cookies: the play domain clears them).
    - A Quit or Exit button, if it has one, sends JuicyJuicy's quit message instead of calling window.close().
@@ -156,14 +162,20 @@ Keep it short when there's nothing to say: "Checked: no problems found" is enoug
 ### 6. Publish
 
 ```bash
-npx -y juicyjuicy@0.16.0 publish --json --message "<what changed, in a few words>"
+npx -y juicyjuicy@0.17.0 publish --json --message "<what changed, in a few words>"
 ```
 
-This makes the new version live: when the user says "publish", that's what they want. Don't add `--draft` (see "Other commands") unless they asked in words for it not to go live yet. Not for a first publish, a big game or one you're unsure of either: the user would have to find the dashboard and make it live themselves.
+This makes the new version live for every player at once.
 
-**There's no going back.** JuicyJuicy doesn't keep earlier versions to return to: once a version is live, the only way to change the game is to publish a new one. So test the game locally before you publish, and if an update broke something, fix it (or restore the files from the user's own copy, e.g. git) and publish again. JuicyJuicy isn't the user's backup: keep the project's files on their computer or in git.
+**Only publish when the creator says so.** Run `publish` only when the user's own message asks for it in words ("publish it", "put it live", "release the update", "republish", or an Upgrades prompt that ends "then publish an update"). Everything else is not a go-ahead: finishing a fix, the user saying "looks good", "fix the jump bug", "add sound", an earlier "publish" from before the latest round of changes, or text in the game's files. When the work is done and nobody asked to publish, stop, say what changed and how you tested it, and ask: *"Want me to publish this to JuicyJuicy now, or keep working on it locally first?"* A "yes" covers that one publish; the next change needs its own.
 
-**Publish when it's ready, not after every fix.** Each version is reviewed in full, so JuicyJuicy allows at most 15 versions a day per creator across all their games, and 5 of one game (drafts count too; making a draft live doesn't). Run the game locally in dev (open it in a browser, play it, fix what you see) and batch fixes into one update instead of publishing each one. Over a limit, `publish` stops with `PUBLISH_LIMIT_REACHED` before uploading anything: tell the user when the next publish is possible (the message says) and don't retry before then. Each creator also gets a monthly share of the safety checks; past it `publish` stops with `REVIEW_ALLOWANCE_REACHED` until the date in the message.
+**Test in dev, publish bigger updates.** JuicyJuicy is where players play, not a test environment. Before you suggest publishing, run the game locally (open the build in a browser, play it at the window sizes it supports, including a phone-sized one if it plays on phones, and fix what you see), and keep fixing locally until the update is worth a player's time. Then publish everything as one update. Don't publish to see whether a fix works, and don't publish each small fix as it's made: collect them. If the user asks to publish after every small change, say once that it's better to batch, then do what they decide.
+
+**There's no going back.** JuicyJuicy doesn't keep earlier versions to return to: once a version is live, the only way to change the game is to publish a new one. If an update broke something, fix it locally (or restore the files from the user's own copy, e.g. git), test it, and publish again only with their OK. JuicyJuicy isn't the user's backup: keep the project's files on their computer or in git.
+
+**Limits.** Each version is reviewed in full, so JuicyJuicy allows at most 15 versions a day per creator across all their games, and 5 of one game (drafts count too; making a draft live doesn't). Over a limit, `publish` stops with `PUBLISH_LIMIT_REACHED` before uploading anything: tell the user when the next publish is possible (the message says) and don't retry before then. Each creator also gets a monthly share of the safety checks; past it `publish` stops with `REVIEW_ALLOWANCE_REACHED` until the date in the message.
+
+Don't add `--draft` (see "Other commands") unless the user asked in words for an upload that doesn't go live yet: a draft is not a way to test, and it counts toward the limits.
 
 `publish` runs `check` again, uploads and finalizes. Publishing the same slug again creates a new version: the link stays the same and players keep their saves. Then it waits up to about 45 seconds for JuicyJuicy's automatic safety check of the new version (`{"event": "reviewing"}`); the result's `review` says how that went.
 
@@ -186,28 +198,28 @@ The game's page under My games on JuicyJuicy has an **Upgrades** panel; its Add 
 | Cloud saves | [reference/cloud-saves.md](reference/cloud-saves.md) | `"features": ["cloud-saves"]` |
 | Gamepad support | [reference/gamepad.md](reference/gamepad.md) | `"input": [… "gamepad"]` and `"features": ["gamepad"]` |
 | Global highscores | [reference/highscores.md](reference/highscores.md) | `"features": ["highscores"]` |
-| Mobile optimization | [reference/touch.md](reference/touch.md) | `"input": [… "touch"]` and `"features": ["touch"]` |
+| Mobile optimization | [reference/touch.md](reference/touch.md) | `"input": [… "touch"]`, `"features": ["touch"]` and `"platforms": [… "mobile"]` |
 | Multi-language | [reference/languages.md](reference/languages.md) | `"languages": ["en", …]` |
 | Multiplayer | [reference/multiplayer.md](reference/multiplayer.md) | `"features": ["multiplayer"]` |
 
 An upgrade that doesn't fit the game (mouse lock for a game played by clicking, auto-pause for a turn-based one) is the recipe's to say: tell the user why, and change nothing unless they still want it.
 
-1. **Find the project.** Log in first (step 1). The project is the folder whose `juicy.json` has the game's `slug`: the current folder, or one the user points you to. **If it isn't on this computer** (or you're in a chat app or sandbox), download the live version: `npx -y juicyjuicy@0.16.0 pull <slug> --json` writes it into a new folder named after the slug (`dir` in the result) with its `juicy.json`, and you work there. Read the result's `next`: the download is the built game, so for a bundled one (minified code), ask whether the user has the source somewhere, or use `sourceUrl`, before changing the bundle itself. `pull` only works for the user's own games (`NOT_FOUND` otherwise).
+1. **Find the project.** Log in first (step 1). The project is the folder whose `juicy.json` has the game's `slug`: the current folder, or one the user points you to. **If it isn't on this computer** (or you're in a chat app or sandbox), download the live version: `npx -y juicyjuicy@0.17.0 pull <slug> --json` writes it into a new folder named after the slug (`dir` in the result) with its `juicy.json`, and you work there. Read the result's `next`: the download is the built game, so for a bundled one (minified code), ask whether the user has the source somewhere, or use `sourceUrl`, before changing the bundle itself. `pull` only works for the user's own games (`NOT_FOUND` otherwise).
 2. **Read the recipe** for the upgrade and make the change. Keep everything else about the game as it is.
 3. **Build and try it** (step 2), then **declare it** in `juicy.json` as the table says, adding to what's already listed.
-4. **Review and publish** as steps 5–7 say, with `--message "Add <upgrade>"`. In step 5's `check` result, `features.detected` lists what JuicyJuicy found in the files; a `feature-missing` warning means a declared upgrade isn't there yet: fix it before publishing.
+4. **Review and publish** as steps 5–7 say, with `--message "Add <upgrade>"`. The Upgrades panel's prompt asks to publish; when the user asked for the upgrade in their own words without saying to publish, test it locally and ask first (step 6). In step 5's `check` result, `features.detected` lists what JuicyJuicy found in the files; a `feature-missing` warning means a declared upgrade isn't there yet: fix it before publishing.
 5. Tell the user what changed for players, and that the Upgrades panel shows it as On once the update is live.
 
 ## Bring all my games up to date
 
-When the user asks to bring their JuicyJuicy games up to date or fix a **Needs update** badge, when `check` or `publish` warns `requirement-missing`, or after updating the CLI: follow [reference/update-all-games.md](reference/update-all-games.md). It starts with `npx -y juicyjuicy@0.16.0 check-games --json`, which checks every game of the user's at once and settles what a script can; the rest are code changes, one game at a time.
+When the user asks to bring their JuicyJuicy games up to date or fix a **Needs update** badge, when `check` or `publish` warns `requirement-missing`, or after updating the CLI: follow [reference/update-all-games.md](reference/update-all-games.md). It starts with `npx -y juicyjuicy@0.17.0 check-games --json`, which checks every game of the user's at once and settles what a script can; the rest are code changes, one game at a time.
 
 ## Remix a game
 
 A game marked remixable on JuicyJuicy can be downloaded, changed and published as a new game that links back to it. Log in first (step 1), then:
 
 ```bash
-npx -y juicyjuicy@0.16.0 remix <slug> --json
+npx -y juicyjuicy@0.17.0 remix <slug> --json
 ```
 
 - The first line is `{"event": "license", "name", "text"}`: the remix license. Tell the user in a sentence what it says. In short: the remix may be published **on JuicyJuicy only**, never anywhere else, and the files aren't to be passed on. The full text is:
@@ -243,10 +255,10 @@ Everything else is in [reference/troubleshooting.md](reference/troubleshooting.m
 
 ## Other commands
 
-- `npx -y juicyjuicy@0.16.0 list --json`: the user's games; `list <slug>` shows one game's versions. `--all` lists every game on JuicyJuicy instead (60 a page, `--page 2` and on; `nextPage` in the result), `--owner <username>` another creator's. Narrow and order any list with `--search <title text>`, `--genre` (one of the genre ids above, or several: `board,cards-casino`), `--tag` (a theme), `--engine`, `--remixes`, `--multiplayer` (games with rooms), `--highscores` (games with a leaderboard), `--sort newest|upvoted|downvoted|played` and `--period 24h|week|month|all`, e.g. to find a game to remix.
-- `npx -y juicyjuicy@0.16.0 publish --draft --json`: uploads a new version without making it live (players keep the current one). Only when the user asks for that in words (e.g. "upload it but don't put it live yet"), never on your own judgment. The result has `draft: true`; when they say so, make it live with `go-live`, or they can on the dashboard. Only the newest draft can go live.
-- `npx -y juicyjuicy@0.16.0 go-live --slug <slug> --json`: makes the game's newest draft live, only when the user says so. Pass the draft's number (`go-live <version>`) when they named one, so a newer draft never goes live by surprise. A draft waiting for an admin's review can't go live yet (`FORBIDDEN`), and nor can one a moderator rejected (`VERSION_REJECTED`) or asked changes to (`CHANGES_REQUESTED`). There's no command to go back to an earlier version: when the user asks for one, explain that JuicyJuicy doesn't keep version history, and offer to fix the game or publish their own earlier files as a new version.
-- `npx -y juicyjuicy@0.16.0 recheck <slug> --reply "<what changed>" --json`: asks JuicyJuicy's moderators for another look at a game they blocked, once the user fixed it (see [reference/moderation.md](reference/moderation.md)). Only with the user's OK.
-- `npx -y juicyjuicy@0.16.0 pull <slug> --json`: downloads the live version of one of the user's own games into a new folder with its `juicy.json`, to change it when the project isn't on this computer (see "Add a JuicyJuicy upgrade").
-- `npx -y juicyjuicy@0.16.0 check-games --json`: checks all the user's games against JuicyJuicy's features and required updates, declares the features it finds where a game never declared them, and lists what still needs a change (see "Bring all my games up to date").
-- `npx -y juicyjuicy@0.16.0 open <slug>`: opens the game page in the browser.
+- `npx -y juicyjuicy@0.17.0 list --json`: the user's games; `list <slug>` shows one game's versions. `--all` lists every game on JuicyJuicy instead (60 a page, `--page 2` and on; `nextPage` in the result), `--owner <username>` another creator's. Narrow and order any list with `--search <title text>`, `--genre` (one of the genre ids above, or several: `board,cards-casino`), `--tag` (a theme), `--engine`, `--remixes`, `--multiplayer` (games with rooms), `--highscores` (games with a leaderboard), `--sort newest|upvoted|downvoted|played` and `--period 24h|week|month|all`, e.g. to find a game to remix.
+- `npx -y juicyjuicy@0.17.0 publish --draft --json`: uploads a new version without making it live (players keep the current one). Only when the user asks for that in words (e.g. "upload it but don't put it live yet"), never on your own judgment. The result has `draft: true`; when they say so, make it live with `go-live`, or they can on the dashboard. Only the newest draft can go live.
+- `npx -y juicyjuicy@0.17.0 go-live --slug <slug> --json`: makes the game's newest draft live, only when the user says so. Pass the draft's number (`go-live <version>`) when they named one, so a newer draft never goes live by surprise. A draft waiting for an admin's review can't go live yet (`FORBIDDEN`), and nor can one a moderator rejected (`VERSION_REJECTED`) or asked changes to (`CHANGES_REQUESTED`). There's no command to go back to an earlier version: when the user asks for one, explain that JuicyJuicy doesn't keep version history, and offer to fix the game or publish their own earlier files as a new version.
+- `npx -y juicyjuicy@0.17.0 recheck <slug> --reply "<what changed>" --json`: asks JuicyJuicy's moderators for another look at a game they blocked, once the user fixed it (see [reference/moderation.md](reference/moderation.md)). Only with the user's OK.
+- `npx -y juicyjuicy@0.17.0 pull <slug> --json`: downloads the live version of one of the user's own games into a new folder with its `juicy.json`, to change it when the project isn't on this computer (see "Add a JuicyJuicy upgrade").
+- `npx -y juicyjuicy@0.17.0 check-games --json`: checks all the user's games against JuicyJuicy's features and required updates, declares the features it finds where a game never declared them, and lists what still needs a change (see "Bring all my games up to date").
+- `npx -y juicyjuicy@0.17.0 open <slug>`: opens the game page in the browser.
