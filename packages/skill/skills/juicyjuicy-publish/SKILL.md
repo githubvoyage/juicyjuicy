@@ -143,7 +143,7 @@ Do this **every time**, also for updates. It protects the user and their players
    - Fills its window when resized, so it plays both on the page and in fullscreen.
    - Never freezes: no loop that can run forever, and a 0×0 window pauses the game instead of restarting it.
    - Has the controls players need, including touch for phones when the game allows it.
-   - Fits the devices `platforms` names: a game listed for `mobile` fills a phone screen, keeps its text readable and plays a whole round by touch ([reference/touch.md](reference/touch.md)); `check` warns (`mobile-basics`) about what's missing. Whenever the user asks for a phone version, mobile support or touch controls, go through all of touch.md (screen size with the browser's bars, safe areas, sharp drawing, the pill's corner, controls, sound), not only the controls.
+   - Fits the devices `platforms` names: a game listed for `mobile` fills a phone screen, keeps its text readable and plays a whole round by touch ([reference/touch.md](reference/touch.md)); `check` warns (`mobile-basics`) about what's missing. Whenever the user asks for a phone version, mobile support or touch controls, go through all of touch.md (screen size with the browser's bars, safe areas, sharp drawing, controls, sound), not only the controls.
    - Mouse control doesn't stop at the frame's edge: drags use pointer capture, games that aim or steer with the mouse use Pointer Lock.
    - Saves progress with JuicyJuicy's window.juicy snippet, if it saves at all, so it follows signed-in players to any browser (not cookies: the play domain clears them).
    - A Quit or Exit button, if it has one, sends JuicyJuicy's quit message instead of calling window.close().
