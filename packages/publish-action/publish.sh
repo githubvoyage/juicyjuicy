@@ -29,7 +29,7 @@ result=$(tail -n 1 "$log")
 LOG="$log" RESULT="$result" STATUS="$status" node <<'NODE'
 const fs = require("node:fs");
 const append = (file, text) => file && fs.appendFileSync(file, text);
-// Warnings (e.g. no browser for the auto-thumbnail, so the tile is a gradient) as annotations.
+// Warnings (e.g. juicy.json names no cover or screenshots) as annotations.
 for (const line of fs.readFileSync(process.env.LOG, "utf8").split("\n")) {
   try {
     const event = JSON.parse(line);

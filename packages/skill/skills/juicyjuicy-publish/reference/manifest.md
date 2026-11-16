@@ -21,7 +21,8 @@ The manifest in the project folder. `juicyjuicy init` writes it; edit it by hand
   "platforms": ["desktop", "mobile"],
   "orientation": "landscape",
   "aspectRatio": "16:9",
-  "thumbnail": "thumbnail.png",
+  "thumbnail": "cover.webp",
+  "screenshots": ["screenshots/shot-1.webp", "screenshots/shot-2.webp", "screenshots/shot-3.webp"],
   "remixable": true,
   "sourceUrl": "https://github.com/someone/space-goose"
 }
@@ -46,10 +47,13 @@ The manifest in the project folder. `juicyjuicy init` writes it; edit it by hand
 | `platforms` | | Where the game is made to be played: `["desktop"]` (a computer: keyboard and mouse), `["mobile"]` (a phone, by touch) or both. JuicyJuicy's home page and lists have a **Computer** and a **Phone** tab, and a game shows under the ones it lists; phones open on Phone. With both, the one it's made for goes first (`["mobile", "desktop"]` for a phone game that also plays on a computer): each tab ranks by its own players, and only games made mainly for a tab show in its New and Recently updated rows. List `mobile` only once a whole round plays well by touch on a phone ([touch.md](touch.md)): it needs `touch` in `input`, and `check` warns when the viewport meta, touch input or `touch-action` is missing. Left out, a publish keeps the game's (a new game gets `["desktop"]`). | `--platforms a,b` |
 | `orientation` | | `landscape`, `portrait` or `any` (default). On phones, JuicyJuicy shows "Rotate your phone" over a game that's `landscape` or `portrait` when it's held the other way. | `--orientation` |
 | `aspectRatio` | | `"W:H"` like `"16:9"` or `"4:3"`, or `"fill"` to fill the player. Default `16:9`. | `--aspect-ratio` |
-| `thumbnail` | | png/jpg/webp in the project folder (not the build folder), up to 2 MB and 4096×4096 pixels. Without one, `check` and `publish` screenshot the game in a local Chrome or Edge, offline (`--no-auto-thumbnail` turns that off; a remix only with `--auto-thumbnail`). | `--thumbnail` |
+| `thumbnail` | yes* | The cover: png/jpg/webp in the project folder (not the build folder), at most 300 KB and 1280×720 pixels (720×1280 upright). A designed picture with the title, not a screenshot; `cover` makes it from `cover.html`. | `--thumbnail` |
+| `screenshots` | yes* | 3 to 5 png/jpg/webp in the project folder, each at most 100 KB and 640×360 pixels (360×640 upright), in the order the tile's slideshow plays them. `capture` takes them. | |
 | `howItWasMade` | | No longer used; `check` warns about it and `init` removes it. | |
 | `remixable` | | `true` grants the JuicyJuicy remix license: other members may remix the game on JuicyJuicy only (see SKILL.md, "Remix a game"). Default `false`. | `--remixable` |
 | `sourceUrl` | | Plain `https://` link to the source, e.g. a GitHub repo (no `?`, `#`, spaces or quotes; at most 300 characters). | `--source-url` |
 | `remixedFrom` | | Set by `juicyjuicy remix`; don't edit. | |
+
+\* `publish` is refused without them unless the game's dashboard has a cover, or 3 or more screenshots.
 
 Publishing replaces the game's title, description, tags and the rest with what `juicy.json` says, so keep it up to date. (`ageRating` only when it's there, and not over a moderator's rating.)

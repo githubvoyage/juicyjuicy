@@ -6,7 +6,7 @@ With `--json`, a failed command's last line is `{"ok": false, "error": {"code", 
 
 | Code | Meaning | Fix |
 |---|---|---|
-| `UNAUTHORIZED` | No saved login, or the token was revoked. | `npx -y juicyjuicy@0.17.0 login --json` (the user approves in the browser). In CI, set `JUICY_TOKEN`. |
+| `UNAUTHORIZED` | No saved login, or the token was revoked. | `npx -y juicyjuicy@0.18.0 login --json` (the user approves in the browser). In CI, set `JUICY_TOKEN`. |
 | `EXPIRED_TOKEN` | The login code expired (10 minutes) or was used. | Run `login` again. |
 | `ACCESS_DENIED` | The user clicked Deny. | Ask them, then run `login` again. |
 
@@ -17,7 +17,7 @@ With `--json`, a failed command's last line is `{"ok": false, "error": {"code", 
 | `INVALID_MANIFEST` | `juicy.json` is missing, isn't JSON, or a field breaks a rule (`details` says which). | No file: run `init`. Otherwise fix the listed fields (see manifest.md). |
 | `ENTRY_MISSING` | The build folder doesn't exist, or has no entry file. | Run the build. Check `buildDir` and `entry`. |
 | `INVALID_PATH` | A file name is unsafe (backslash, control character, too long, …). | Rename the file (POSIX names, under 256 characters). |
-| `TOO_LARGE` | A file is over 100 MB, the whole build over 150 MB, or the thumbnail over 2 MB or 4096 pixels wide or high. Or the user's games together take up more than their 2 GB of storage (the message says "your games already take up"). | Compress or remove assets; resize the thumbnail. For storage: the user deletes a game they don't need on the site. Only what each game can still use counts (its live version, the one before it, an update waiting for review and its newest draft); JuicyJuicy deletes the rest. |
+| `TOO_LARGE` | A file is over 100 MB, the whole build over 150 MB, or the cover over 300 KB or 1280×720 pixels, or a screenshot over 100 KB or 640×360. Or the user's games together take up more than their 2 GB of storage (the message says "your games already take up"). | Compress or remove assets. For the cover or a screenshot, run `cover` or `capture` again: they make images that fit. For storage: the user deletes a game they don't need on the site. Only what each game can still use counts (its live version, the one before it, an update waiting for review and its newest draft); JuicyJuicy deletes the rest. |
 | `TOO_MANY_FILES` | More than 3,000 files. | Bundle or pack assets (sprite sheets, atlases). |
 | `VALIDATION_FAILED` | Something else is malformed, e.g. a thumbnail that isn't png/jpg/webp or a file that's missing. Or the message says the CLI is out of date: JuicyJuicy needs a newer release than the one run. | Follow the message. For an out-of-date CLI, run the `setup` command it gives (it updates the CLI and the skill), read the skill again and use the release it names. |
 | `SLUG_TAKEN` | Another creator owns this slug. | Choose a new slug: `init --slug <new-slug>`. |
@@ -49,5 +49,7 @@ With `--json`, a failed command's last line is `{"ok": false, "error": {"code", 
 - **Blank page or 404s for scripts:** a bundler project published from its root instead of `dist/`, or a Vite `base` other than `/` or `./`.
 - **Assets load locally but not online:** file names differ only in letter case (`Player.png` vs `player.png`); the server is case-sensitive.
 - **Godot shows "SharedArrayBuffer" errors:** re-export with thread support off.
-- **The tile has no picture:** without a `thumbnail` in `juicy.json` the CLI screenshots the game, which needs Chrome, Edge, Chromium or Brave installed (or `JUICY_BROWSER` set to one); the warning says why it couldn't. A remix isn't screenshotted without `--auto-thumbnail` (it runs the other creator's code), and the screenshot runs offline, so a game that loads its engine from a CDN comes out blank. Add `thumbnail.png` and set `"thumbnail"` in `juicy.json`, then publish again.
-- **The tile shows a loading or "click to start" screen:** that's the automatic screenshot. Save a gameplay screenshot as `thumbnail.png` and set `"thumbnail"` in `juicy.json`. Or upload one on the game's dashboard page: later publishes keep it, and only a `thumbnail` in `juicy.json` replaces it.
+- **`INVALID_MANIFEST` on `thumbnail` or `screenshots`:** every game needs a cover and 3 to 5 screenshots (step 4): run `cover` and `capture`, or upload them on the game's dashboard page.
+- **`cover` or `capture` can't find a browser:** they need Chrome, Edge, Chromium or Brave installed, or `JUICY_BROWSER` set to one.
+- **`capture` says the shots are the same:** the game ignores `#jj-shot=N`. Read `location.hash` at start-up and begin in a different moment of play for each N (step 4). A game that loads its engine from a CDN comes out blank: the browser runs offline.
+- **The cover or screenshots don't show yet:** new images show once JuicyJuicy's automatic image check clears them, usually within a minute; the game's dashboard says when one waits for a person.
