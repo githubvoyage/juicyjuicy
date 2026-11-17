@@ -6,7 +6,7 @@ With `--json`, a failed command's last line is `{"ok": false, "error": {"code", 
 
 | Code | Meaning | Fix |
 |---|---|---|
-| `UNAUTHORIZED` | No saved login, or the token was revoked. | `npx -y juicyjuicy@0.18.0 login --json` (the user approves in the browser). In CI, set `JUICY_TOKEN`. |
+| `UNAUTHORIZED` | No saved login, or the token was revoked. | `npx -y juicyjuicy@0.19.0 login --json` (the user approves in the browser). In CI, set `JUICY_TOKEN`. |
 | `EXPIRED_TOKEN` | The login code expired (10 minutes) or was used. | Run `login` again. |
 | `ACCESS_DENIED` | The user clicked Deny. | Ask them, then run `login` again. |
 
@@ -52,4 +52,5 @@ With `--json`, a failed command's last line is `{"ok": false, "error": {"code", 
 - **`INVALID_MANIFEST` on `thumbnail` or `screenshots`:** every game needs a cover and 3 to 5 screenshots (step 4): run `cover` and `capture`, or upload them on the game's dashboard page.
 - **`cover` or `capture` can't find a browser:** they need Chrome, Edge, Chromium or Brave installed, or `JUICY_BROWSER` set to one.
 - **`capture` says the shots are the same:** the game ignores `#jj-shot=N`. Read `location.hash` at start-up and begin in a different moment of play for each N (step 4). A game that loads its engine from a CDN comes out blank: the browser runs offline.
+- **The new cover or screenshots didn't replace the ones on the site:** images uploaded on the game's dashboard stay over `juicy.json`'s (the result's `keptDashboardImages` says which). Only if the user wants `juicy.json`'s, publish again with `--replace-images`, or they change them on the dashboard.
 - **The cover or screenshots don't show yet:** new images show once JuicyJuicy's automatic image check clears them, usually within a minute; the game's dashboard says when one waits for a person.
